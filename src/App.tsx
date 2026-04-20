@@ -233,7 +233,7 @@ export default function App() {
                 {/* Mission Statement */}
                 <div className="space-y-6 max-w-3xl mx-auto pt-10 md:pt-16">
                   <p className="text-lg md:text-2xl font-sans font-medium tracking-tight leading-[1.3] text-center text-white/90 px-4">
-                    Naším cílem je přinést do města radost, povzbuzení a naději, která má skutečný přesah.
+                    Naším cílem je přinést do města radost, povzbuzení a naději, která má skutečný přesah
                   </p>
                   <div className="h-1 w-12 bg-brand-teal/40 rounded-full mx-auto" />
                 </div>
@@ -253,10 +253,10 @@ export default function App() {
                       <p className="text-xs font-black uppercase tracking-[0.4em] text-brand-teal">Prostor pro setkání</p>
                     </div>
                     <p className="text-2xl md:text-3xl font-sans font-bold leading-tight tracking-tighter">
-                      Den pro Brno je otevřený kulturně - komunitní festival pro všechny generace. 
+                      Den pro Brno je otevřený kulturně - komunitní festival pro všechny generace 
                     </p>
                     <p className="text-lg text-white/70 leading-relaxed">
-                      V samotném srdci města chceme vytvořit prostor, kde se lidé mohou zastavit, nadechnout, setkat se a zažít něco hezkého.
+                      V samotném srdci města chceme vytvořit prostor, kde se lidé mohou zastavit, nadechnout, setkat se a zažít něco hezkého
                     </p>
                   </motion.div>
 
@@ -270,10 +270,10 @@ export default function App() {
                       <p className="text-xs font-black uppercase tracking-[0.4em] text-brand-yellow">Pestrý program</p>
                     </div>
                     <p className="text-2xl md:text-3xl font-sans font-bold leading-tight tracking-tighter">
-                      Čeká vás pestrý program plný hudby, rozhovorů a inspirace. 
+                      Čeká vás pestrý program plný hudby, rozhovorů a inspirace 
                     </p>
                     <p className="text-lg text-white/70 leading-relaxed">
-                      Festival propojuje církve, neziskové organizace i širokou veřejnost – bez ohledu na věk, víru nebo životní situaci.
+                      Festival propojuje církve, neziskové organizace i širokou veřejnost – bez ohledu na věk, víru nebo životní situaci
                     </p>
                   </motion.div>
                 </div>
@@ -326,7 +326,7 @@ export default function App() {
                 >
                   <div className="h-px w-12 bg-brand-teal/20 mx-auto" />
                   <p className="text-xl md:text-3xl font-sans font-bold leading-relaxed text-brand-teal tracking-tight">
-                    Přijďte strávit den, který může něco změnit.
+                    Přijďte strávit den, který může něco změnit
                   </p>
                   <div className="h-px w-12 bg-brand-teal/20 mx-auto" />
                 </motion.div>
@@ -486,7 +486,7 @@ export default function App() {
                   </div>
                   <div className="hidden md:block w-px h-8 bg-white/10" />
                   <p className="text-base text-white/70 font-light text-center md:text-left leading-relaxed">
-                    Pastor circles ICF v Brně.
+                    Pastor circles ICF v Brně
                   </p>
                 </motion.div>
               </div>
@@ -513,7 +513,7 @@ export default function App() {
                   </div>
                   <h4 className="text-4xl md:text-5xl font-sans font-black tracking-tighter mb-6 text-black leading-none">MÍSTO PRO <br />RODINY</h4>
                   <p className="text-black/80 text-lg leading-relaxed">
-                    Aktivity pro děti, hry i prostor, kde si rodiny mohou užít čas společně.
+                    Aktivity pro děti, hry i prostor, kde si rodiny mohou užít čas společně
                   </p>
                 </div>
 
@@ -572,7 +572,7 @@ export default function App() {
                     <div>
                       <h4 className="text-2xl md:text-3xl font-bold tracking-tight text-white mb-1">Prezentace organizací</h4>
                       <p className="text-white/70 font-light max-w-md">
-                        Poznejte místní neziskovky a projekty, které pomáhají lidem v Brně.
+                        Poznejte místní neziskovky a projekty, které pomáhají lidem v Brně
                       </p>
                     </div>
                   </div>
@@ -607,7 +607,7 @@ export default function App() {
                       <h4 className="text-2xl font-bold tracking-tight text-white">Zóna klidu</h4>
                     </div>
                     <p className="text-white/70 font-light leading-relaxed">
-                      Klidnější zóna pro rozhovor, modlitební stan nebo osobní sdílení v naší naslouchárně.
+                      Klidnější zóna pro rozhovor, modlitební stan nebo osobní sdílení v naší naslouchárně
                     </p>
                   </div>
 
@@ -649,10 +649,10 @@ export default function App() {
                 <p className="text-xs font-black uppercase tracking-[0.4em] text-brand-yellow">Proč vznikl Den pro Brno</p>
               </div>
               <p className="text-2xl md:text-3xl font-sans font-bold leading-tight tracking-tighter">
-                Věříme, že město není jen o budovách, ale především o lidech. 
+                Věříme, že město není jen o budovách, ale především o lidech 
               </p>
               <p className="text-lg text-white/80 leading-relaxed font-light">
-                Den pro Brno vzniká z touhy spojovat – překračovat hranice mezi lidmi, organizacemi i generacemi. Chceme vytvářet prostor, kde je možné zažít přijetí, otevřenost a naději.
+                Den pro Brno vzniká z touhy spojovat – překračovat hranice mezi lidmi, organizacemi i generacemi. Chceme vytvářet prostor, kde je možné zažít přijetí, otevřenost a naději
               </p>
               
               <div className="pt-6 border-t border-white/10 flex items-start gap-4">
@@ -660,7 +660,7 @@ export default function App() {
                 <div>
                   <h5 className="font-bold text-lg mb-2">Záštita primátorky</h5>
                   <p className="text-white/70 text-sm leading-relaxed">
-                    Festival probíhá pod záštitou primátorky města Brna, <span className="text-white font-semibold">JUDr. Markéty Vaňkové</span>.
+                    Festival probíhá pod záštitou primátorky města Brna, <span className="text-white font-semibold">JUDr. Markéty Vaňkové</span>
                   </p>
                 </div>
               </div>
@@ -676,12 +676,12 @@ export default function App() {
                 <p className="text-xs font-black uppercase tracking-[0.4em] text-white">Kdo festival organizuje</p>
               </div>
               <p className="text-2xl md:text-3xl font-sans font-bold leading-tight tracking-tighter">
-                Festival organizuje hnutí Tělo v pohybu a společenství Pluska.
+                Festival organizuje hnutí Tělo v pohybu a společenství Pluska
               </p>
               <div className="space-y-4">
                 <p className="text-base leading-relaxed text-white/70">
                   <span className="font-bold text-white block mb-1">In-Life & Pluska</span> 
-                  Cílem je rozvoj studentů i rodin v oblastech mezilidských vztahů, charakteru a duchovního rozměru života, vycházejícího z křesťanských kořenů naší civilizace.
+                  Cílem je rozvoj studentů i rodin v oblastech mezilidských vztahů, charakteru a duchovního rozměru života, vycházejícího z křesťanských kořenů naší civilizace
                 </p>
                 
                 <div className="flex items-center gap-4 bg-white/5 p-5 rounded-2xl border border-white/5">
@@ -689,7 +689,7 @@ export default function App() {
                      +
                   </div>
                   <p className="text-xs font-medium text-white/80 uppercase tracking-widest leading-relaxed">
-                    Na přípravě se podílí desítky dobrovolníků, kteří chtějí přinést do města své srdce.
+                    Na přípravě se podílí desítky dobrovolníků, kteří chtějí přinést do města své srdce
                   </p>
                 </div>
               </div>
@@ -729,14 +729,14 @@ export default function App() {
                 transition={{ delay: idx * 0.05 }}
                 className="bg-brand-red text-white p-8 rounded-2xl flex flex-col items-center text-center group hover:bg-brand-red-dark hover:scale-[1.02] transition-all duration-300 min-h-[160px] justify-center shadow-lg border border-white/10"
               >
-                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/50 mb-3 block">
+                <span className="text-xs font-bold uppercase tracking-[0.3em] text-brand-yellow mb-4 block">
                   {item.label}
                 </span>
-                <p className="text-lg font-bold tracking-tight text-white leading-snug">
+                <p className="text-xl md:text-2xl font-bold tracking-tight text-white leading-tight">
                   {item.text}
                 </p>
-                <div className="h-px w-8 bg-white/20 my-3 transition-colors group-hover:bg-brand-teal/40" />
-                <p className="text-[10px] text-white/40 font-bold uppercase tracking-widest leading-tight">
+                <div className="h-px w-10 bg-white/20 my-4 transition-colors group-hover:bg-brand-teal/40" />
+                <p className="text-xs text-white/80 font-bold uppercase tracking-widest leading-relaxed">
                   {item.sub}
                 </p>
               </motion.div>
@@ -750,14 +750,16 @@ export default function App() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-16">
           {/* Left Column: Text & Info */}
           <div className="lg:col-span-5 space-y-12 text-left">
-            <div className="space-y-6">
-              <h2 className="text-3xl md:text-5xl font-sans font-bold tracking-tighter">BUĎTE U TOHO.</h2>
+            <div className="space-y-8">
+              <div className="inline-block bg-brand-yellow px-6 py-2 rounded-lg transform -skew-x-6">
+                <h2 className="text-3xl md:text-5xl font-sans font-black tracking-tighter text-black uppercase transform skew-x-6">BUĎTE U TOHO.</h2>
+              </div>
               <div className="text-lg text-white max-w-sm leading-relaxed font-medium space-y-4">
-                <p>Ať už přijdete na chvíli, nebo zůstanete celý den, jste vítáni.</p>
-                <p>Přijďte sami, s přáteli nebo s rodinou.</p>
-                <p>Přijďte se podívat, odpočinout si nebo se nechat inspirovat.</p>
-                <p>Nebojte se zeptat.</p>
-                <p className="text-brand-teal font-black pt-2">Den pro Brno je tu pro vás.</p>
+                <p>Ať už přijdete na chvíli, nebo zůstanete celý den, jste vítáni</p>
+                <p>Přijďte sami, s přáteli nebo s rodinou</p>
+                <p>Přijďte se podívat, odpočinout si nebo se nechat inspirovat</p>
+                <p>Nebojte se zeptat</p>
+                <p className="text-brand-teal font-black pt-2">Den pro Brno je tu pro vás</p>
               </div>
             </div>
 
