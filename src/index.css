@@ -1,0 +1,44 @@
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;500;700&family=Platypi:ital,wght@0,300..800;1,300..800&display=swap');
+
+@theme {
+  --font-sans: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Platypi", serif;
+  
+  --color-brand-red: #AF1E4E;
+  --color-brand-red-dark: #8a173d;
+  --color-brand-teal: #8ED6D6;
+  --color-brand-yellow: #FFCD29;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+  body {
+    @apply bg-brand-red text-white font-sans antialiased selection:bg-brand-teal selection:text-black;
+  }
+}
+
+@layer components {
+  .brand-gradient {
+    /* Solid brand color for perfect continuity */
+    background: #AF1E4E;
+  }
+
+  .section-container {
+    @apply max-w-6xl mx-auto px-6 py-16 md:py-24 relative z-10;
+  }
+  
+  .glass-card {
+    @apply bg-black/30 backdrop-blur-3xl border border-white/5 rounded-2xl overflow-hidden shadow-xl;
+  }
+  
+  .heading-heavy {
+    @apply font-sans font-bold uppercase tracking-tight;
+  }
+  
+  .gradient-text {
+    @apply bg-clip-text text-transparent bg-linear-to-b from-white to-white/60;
+  }
+}
