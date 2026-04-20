@@ -721,22 +721,22 @@ export default function App() {
               { label: 'Výbava', text: "Deštník s sebou", sub: "Ochrana před sluncem či deštěm" },
               { label: 'Bezpečí', text: "Zdravotní služba", sub: "Přítomni po celou dobu konání" }
             ].map((item, idx) => (
-              <motion.div
+                <motion.div
                 key={idx}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: idx * 0.05 }}
-                className="bg-brand-red text-white p-8 rounded-2xl flex flex-col items-center text-center group hover:bg-brand-red-dark hover:scale-[1.02] transition-all duration-300 min-h-[160px] justify-center shadow-lg border border-white/10"
+                className="bg-white p-8 rounded-2xl flex flex-col items-center text-center group hover:scale-[1.02] transition-all duration-300 min-h-[160px] justify-center shadow-xl hover:shadow-2xl border border-black/5"
               >
-                <span className="text-xs font-bold uppercase tracking-[0.3em] text-brand-yellow mb-4 block">
+                <span className="text-xs font-bold uppercase tracking-[0.3em] text-brand-red mb-4 block">
                   {item.label}
                 </span>
-                <p className="text-xl md:text-2xl font-bold tracking-tight text-white leading-tight">
+                <p className="text-xl md:text-2xl font-bold tracking-tight text-black leading-tight">
                   {item.text}
                 </p>
-                <div className="h-px w-10 bg-white/20 my-4 transition-colors group-hover:bg-brand-teal/40" />
-                <p className="text-xs text-white/80 font-bold uppercase tracking-widest leading-relaxed">
+                <div className="h-px w-10 bg-black/10 my-4 transition-colors group-hover:bg-brand-teal" />
+                <p className="text-xs text-black/40 font-bold uppercase tracking-widest leading-relaxed">
                   {item.sub}
                 </p>
               </motion.div>
