@@ -2194,15 +2194,13 @@ const TalkshowManager = () => {
                                 )}
                               </div>
                             )}
-
+                            
                             {/* Závěrečné slovo */}
-                            {(item.closingWordName || item.closingWordRole) && (
+                            {item.closingWordName && (
                               <div className="flex items-start gap-4 text-white pt-2">
-                                {item.closingWordName && (
-                                  <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center text-white text-xs font-black tracking-widest shrink-0 shadow-lg mt-1">
-                                    {item.closingWordName.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2)}
-                                  </div>
-                                )}
+                                <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center text-white text-xs font-black tracking-widest shrink-0 shadow-lg mt-1">
+                                  {item.closingWordName.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2)}
+                                </div>
                                 <div className="text-left">
                                   <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/40 mb-3 leading-none">Závěrečné slovo</p>
                                   {item.closingWordName && <p className="text-xl font-bold tracking-tight text-white mb-0.5">{item.closingWordName}</p>}
@@ -2633,14 +2631,15 @@ const FamilyProgramManager = () => {
                                    <Clock size={32} />
                                  </div>
                                  <div className="text-left">
-                                   <div className="flex items-center gap-2 mb-1">
+                                   <div className="mb-1">
                                      <p className="text-[10px] md:text-xs font-black uppercase tracking-[0.2em] text-brand-red">HLAVNÍ BOD PROGRAMU</p>
-                                     <span className="text-brand-red opacity-50">•</span>
-                                     <p className="text-[10px] md:text-xs font-black uppercase tracking-[0.2em] text-brand-red">{item.mainPointTime || "15:00"}</p>
                                    </div>
-                                   <h4 className="text-2xl md:text-4xl font-sans font-black tracking-tighter text-black leading-tight leading-none">
+                                   <h4 className="text-2xl md:text-4xl font-sans font-black tracking-tighter text-black leading-tight leading-none mb-1">
                                      {item.mainPoint}
                                    </h4>
+                                   {item.mainPointTime && (
+                                     <p className="text-[10px] md:text-xs font-black uppercase tracking-[0.2em] text-brand-red">{item.mainPointTime}</p>
+                                   )}
                                  </div>
                               </div>
                             )}
@@ -2712,14 +2711,18 @@ const FamilyProgramManager = () => {
                     <textarea required rows={2} value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-4 text-slate-900 focus:border-brand-teal outline-none resize-none transition-all" />
                   </div>
 
-                  <div className="md:col-span-2 space-y-2">
-                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Hlavní bod programu</label>
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                      <div className="md:col-span-3">
-                        <input value={formData.mainPoint} onChange={e => setFormData({...formData, mainPoint: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all" />
+                  <div className="md:col-span-2 space-y-4">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2 flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-brand-red" /> Hlavní bod programu
+                    </label>
+                    <div className="border border-slate-200 rounded-3xl p-6 bg-slate-50 space-y-4">
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Název</label>
+                        <input value={formData.mainPoint} onChange={e => setFormData({...formData, mainPoint: e.target.value})} className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all" />
                       </div>
-                      <div className="md:col-span-1">
-                        <input value={formData.mainPointTime} onChange={e => setFormData({...formData, mainPointTime: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all" />
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Čas</label>
+                        <input value={formData.mainPointTime} onChange={e => setFormData({...formData, mainPointTime: e.target.value})} className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all" />
                       </div>
                     </div>
                   </div>

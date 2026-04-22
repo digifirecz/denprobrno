@@ -880,32 +880,40 @@ export default function Home() {
                         </div>
                       
                       {/* Hosté a moderátor */}
-                      <div className="flex flex-col md:flex-row justify-between items-start gap-12 text-white pb-8 border-b border-white/10 mb-8">
-                        {/* Hosté */}
-                        <div className="flex-1 space-y-6 w-full">
-                          <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/40">{item.guestsTitle}</p>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-y-8 gap-x-12">
-                            {item.guests?.map((guest, gi) => (
-                              <div key={gi} className="group">
-                                <p className="text-xl font-bold tracking-tight text-white">{guest.name}</p>
-                                {guest.role && <p className="text-sm text-white/50 font-medium">{guest.role}</p>}
+                      {(item.guestsTitle || item.guests?.some(g => g.name || g.role) || item.moderatorName || item.moderatorRole) && (
+                        <div className="flex flex-col md:flex-row justify-between items-start gap-12 text-white pb-8 border-b border-white/10 mb-8">
+                          {/* Hosté */}
+                          {(item.guestsTitle || item.guests?.some(g => g.name || g.role)) && (
+                            <div className="flex-1 space-y-6 w-full">
+                              {item.guestsTitle && <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/40">{item.guestsTitle}</p>}
+                              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-y-8 gap-x-12">
+                                {item.guests?.map((guest, gi) => (
+                                  (guest.name || guest.role) && (
+                                    <div key={gi} className="group">
+                                      {guest.name && <p className="text-xl font-bold tracking-tight text-white">{guest.name}</p>}
+                                      {guest.role && <p className="text-sm text-white/50 font-medium">{guest.role}</p>}
+                                    </div>
+                                  )
+                                ))}
                               </div>
-                            ))}
-                          </div>
-                        </div>
-
-                        {/* Moderátor Box */}
-                        <div className="w-full md:w-auto shrink-0">
-                          <div className="bg-white/10 rounded-3xl p-6 pr-16 border border-white/10 relative min-w-[280px]">
-                            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/40 mb-3">Moderuje</p>
-                            <p className="text-xl font-bold tracking-tight text-white mb-0.5">{item.moderatorName}</p>
-                            {item.moderatorRole && <p className="text-sm text-white/50 font-medium">{item.moderatorRole}</p>}
-                            <div className="absolute right-6 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/5 rounded-full flex items-center justify-center text-white/20">
-                              <Users size={24} />
                             </div>
-                          </div>
+                          )}
+
+                          {/* Moderátor Box */}
+                          {(item.moderatorName || item.moderatorRole) && (
+                            <div className="w-full md:w-auto shrink-0">
+                              <div className="bg-white/10 rounded-3xl p-6 pr-16 border border-white/10 relative min-w-[280px]">
+                                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/40 mb-3">Moderuje</p>
+                                {item.moderatorName && <p className="text-xl font-bold tracking-tight text-white mb-0.5">{item.moderatorName}</p>}
+                                {item.moderatorRole && <p className="text-sm text-white/50 font-medium">{item.moderatorRole}</p>}
+                                <div className="absolute right-6 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/5 rounded-full flex items-center justify-center text-white/20">
+                                  <Users size={24} />
+                                </div>
+                              </div>
+                            </div>
+                          )}
                         </div>
-                      </div>
+                      )}
 
                       {/* Závěrečné slovo */}
                       {item.closingWordName && (
@@ -992,14 +1000,15 @@ export default function Home() {
                                <Clock size={32} />
                              </div>
                              <div className="text-left">
-                               <div className="flex items-center gap-2 mb-1">
+                               <div className="mb-1">
                                  <p className="text-[10px] md:text-xs font-black uppercase tracking-[0.2em] text-brand-red">HLAVNÍ BOD PROGRAMU</p>
-                                 <span className="text-brand-red opacity-50">•</span>
-                                 <p className="text-[10px] md:text-xs font-black uppercase tracking-[0.2em] text-brand-red">{item.mainPointTime || "15:00"}</p>
                                </div>
-                               <h4 className="text-2xl md:text-4xl font-sans font-black tracking-tighter text-black leading-tight leading-none">
+                               <h4 className="text-2xl md:text-4xl font-sans font-black tracking-tighter text-black leading-tight leading-none mb-1">
                                  {item.mainPoint}
                                </h4>
+                               {item.mainPointTime && (
+                                 <p className="text-[10px] md:text-xs font-black uppercase tracking-[0.2em] text-brand-red">{item.mainPointTime}</p>
+                               )}
                              </div>
                           </div>
                         )}
