@@ -4085,14 +4085,6 @@ const SettingsManager = () => {
 export default function Admin() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [artistsCount, setArtistsCount] = useState(0);
-  const [talkshowsCount, setTalkshowsCount] = useState(0);
-  const [infoCount, setInfoCount] = useState(0);
-  const [familyCount, setFamilyCount] = useState(0);
-  const [communityCount, setCommunityCount] = useState(0);
-  const [aboutCount, setAboutCount] = useState(0);
-  const [submissionsCount, setSubmissionsCount] = useState(0);
-  const [logoPassive, setLogoPassive] = useState('');
   
   const getApiUrl = () => {
     const origin = window.location.origin;
@@ -4102,6 +4094,15 @@ export default function Admin() {
     return ''; // Relative path for same-domain
   };
   const API_URL = getApiUrl();
+
+  const [artistsCount, setArtistsCount] = useState(0);
+  const [talkshowsCount, setTalkshowsCount] = useState(0);
+  const [infoCount, setInfoCount] = useState(0);
+  const [familyCount, setFamilyCount] = useState(0);
+  const [communityCount, setCommunityCount] = useState(0);
+  const [aboutCount, setAboutCount] = useState(0);
+  const [submissionsCount, setSubmissionsCount] = useState(0);
+  const [logoPassive, setLogoPassive] = useState('');
 
   useEffect(() => {
     const unsubGlobal = onSnapshot(doc(db, 'settings', 'global'), (snapshot) => {
