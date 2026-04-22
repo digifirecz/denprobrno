@@ -3282,8 +3282,8 @@ const CommunityManager: React.FC = () => {
 
                   { (formData.title === 'Malá sekce' || formData.title === 'Malá' || formData.title === 'Zóna klidu') ? (
                     <div className="md:col-span-2 space-y-2">
-                      <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Tag <span className="text-brand-red">*</span></label>
-                      <input required value={formData.tag} onChange={e => setFormData({...formData, tag: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all" />
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Tag</label>
+                      <input value={formData.tag} onChange={e => setFormData({...formData, tag: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all" />
                     </div>
                   ) : (
                     <div className="md:col-span-2 space-y-4">

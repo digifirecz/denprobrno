@@ -3,42 +3,51 @@ import { createServer as createViteServer } from 'vite';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import multer from 'multer';
-import fs from 'fs';
+import admin from 'firebase-admin';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// Initialize Firebase Admin
+if (!admin.apps.length) {
+  admin.initializeApp({
+    credential: admin.credential.applicationDefault(),
+    storageBucket: "gen-lang-client-0680928943.firebasestorage.app"
+  });
+}
+const bucket = admin.storage().bucket();
 
 async function startServer() {
   const app = express();
   const PORT = 3000;
 
-  // Set up storage for uploaded files
-  const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-      const uploadDir = path.join(process.cwd(), 'public');
-      if (!fs.existsSync(uploadDir)) {
-        fs.mkdirSync(uploadDir, { recursive: true });
-      }
-      cb(null, uploadDir);
-    },
-    filename: (req, file, cb) => {
-      // Use original name or a safe version
-      const safeName = file.originalname.replace(/[^a-z0-9.]/gi, '_').toLowerCase();
-      cb(null, safeName);
-    }
-  });
-
-  const upload = multer({ storage });
+  // Use memory storage for Buffer-based upload
+  const upload = multer({ storage: multer.memoryStorage() });
 
   app.use(express.json());
 
-  // API Route for file uploads
-  app.post('/api/upload', upload.single('file'), (req, res) => {
+  // API Route for file uploads to Firebase Storage
+  app.post('/api/upload', upload.single('file'), async (req, res) => {
     if (!req.file) {
       return res.status(400).json({ error: 'No file uploaded' });
     }
-    const filePath = `/${req.file.filename}`;
-    res.json({ url: filePath });
+
+    const { buffer, originalname, mimetype } = req.file;
+    const fileName = `uploads/${Date.now()}_${originalname.replace(/[^a-z0-9.]/gi, '_').toLowerCase()}`;
+    const file = bucket.file(fileName);
+
+    try {
+      await file.save(buffer, {
+        metadata: { contentType: mimetype },
+        public: true // Make file public
+      });
+
+      const url = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
+      res.json({ url });
+    } catch (err: any) {
+      console.error('Firebase upload error:', err);
+      res.status(500).json({ error: 'Failed to upload to Firebase.' });
+    }
   });
 
   // API health check
