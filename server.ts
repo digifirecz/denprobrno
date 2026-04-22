@@ -4,6 +4,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import multer from 'multer';
 import admin from 'firebase-admin';
+import cors from 'cors';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -24,6 +25,7 @@ async function startServer() {
   // Use memory storage for Buffer-based upload
   const upload = multer({ storage: multer.memoryStorage() });
 
+  app.use(cors({ origin: '*' }));
   app.use(express.json());
 
   // API Route for file uploads to Firebase Storage

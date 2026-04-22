@@ -477,7 +477,7 @@ const IntroManager = () => {
     formData.append('file', file);
 
     try {
-      const response = await fetch('/api/upload', {
+      const response = await fetch(`${API_URL}/api/upload`, {
         method: 'POST',
         body: formData,
       });
@@ -3920,7 +3920,7 @@ const SettingsManager = () => {
     formData.append('file', file);
 
     try {
-      const response = await fetch('/api/upload', {
+      const response = await fetch(`${API_URL}/api/upload`, {
         method: 'POST',
         body: formData,
       });
@@ -4093,6 +4093,15 @@ export default function Admin() {
   const [aboutCount, setAboutCount] = useState(0);
   const [submissionsCount, setSubmissionsCount] = useState(0);
   const [logoPassive, setLogoPassive] = useState('');
+  
+  const getApiUrl = () => {
+    const origin = window.location.origin;
+    if (origin.includes('vercel.app')) {
+      return 'https://ais-pre-g2juvihdzewqfrd42vfmaw-754701656249.europe-west2.run.app';
+    }
+    return ''; // Relative path for same-domain
+  };
+  const API_URL = getApiUrl();
 
   useEffect(() => {
     const unsubGlobal = onSnapshot(doc(db, 'settings', 'global'), (snapshot) => {
