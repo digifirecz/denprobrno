@@ -1,7 +1,7 @@
 import { motion, useScroll, AnimatePresence } from 'motion/react';
 import { useRef, useState, useEffect } from 'react';
 import { db } from '../lib/firebase';
-import { collection, onSnapshot, query, orderBy, doc, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, doc, addDoc, serverTimestamp, setDoc, getDoc } from 'firebase/firestore';
 import { 
   MapPin, 
   Calendar, 
@@ -204,8 +204,8 @@ export default function Home() {
     subtitle: 'Příběh festivalu'
   });
   const [contactInfo, setContactInfo] = useState({ 
-    email: 'info@denprobrno.cz', 
-    phone: '+420 700 000 000',
+    email: '', 
+    phone: '',
     welcomeText: 'Ať už přijdete na chvíli, nebo zůstanete celý den, jste vítáni\n\nPřijďte sami, s přáteli nebo s rodinou\n\nPřijďte se podívat, odpočinout si nebo se nechat inspirovat\n\nNebojte se zeptat',
     tagline: 'Den pro Brno je tu pro vás'
   });
@@ -351,8 +351,8 @@ export default function Home() {
         const data = snapshot.data();
         setHeroData({
           imageUrl: data.imageUrl || '/hero-full-trans.png',
-          moto: data.moto || 'Naším cílem je přinést do města radost, povzbuzení a naději, která má skutečný přesah',
-          quote: data.quote || 'Přijďte strávit den, který může něco změnit'
+          moto: data.moto ?? 'Naším cílem je přinést do města radost, povzbuzení a naději, která má skutečný přesah',
+          quote: data.quote ?? 'Přijďte strávit den, který může něco změnit'
         });
       }
     });
@@ -366,17 +366,41 @@ export default function Home() {
     });
   }, []);
 
-  // Fetch Global Settings (Logos)
+// Fetch Intro Info Items
   useEffect(() => {
-    return onSnapshot(doc(db, 'settings', 'global'), (snapshot) => {
-      if (snapshot.exists()) {
-        const data = snapshot.data();
-        setGlobalSettings({
-          logoPassive: data.logoPassive || '',
-          logoActive: data.logoActive || ''
-        });
+    // Increment visit counter
+    const trackVisit = async () => {
+      try {
+        const visitRef = doc(db, 'settings', 'stats');
+        await setDoc(visitRef, { 
+          totalVisits: (await import('firebase/firestore')).increment(1),
+          lastVisit: serverTimestamp()
+        }, { merge: true });
+      } catch (e) {
+        console.error("Error tracking visit:", e);
       }
-    });
+    };
+    trackVisit();
+    
+    // Load GA Script
+    const loadGA = async () => {
+      const settingsDoc = await getDoc(doc(db, 'settings', 'global'));
+      if (settingsDoc.exists()) {
+        const gaId = settingsDoc.data().gaMeasurementId;
+        if (gaId) {
+          const script = document.createElement('script');
+          script.src = `https://www.googletagmanager.com/gtag/js?id=${gaId}`;
+          script.async = true;
+          document.head.appendChild(script);
+          
+          (window as any).dataLayer = (window as any).dataLayer || [];
+          function gtag() { (window as any).dataLayer.push(arguments); }
+          gtag('js', new Date());
+          gtag('config', gaId);
+        }
+      }
+    };
+    loadGA();
   }, []);
 
   // Fetch Intro Info Items
@@ -551,12 +575,14 @@ export default function Home() {
                     referrerPolicy="no-referrer"
                   />
                 </motion.div>
-                <div className="space-y-6 max-w-3xl mx-auto pt-10 md:pt-16">
-                  <p className="text-lg md:text-2xl font-sans font-medium tracking-tight leading-[1.3] text-center text-white/90 px-4 whitespace-pre-wrap">
-                    {heroData.moto}
-                  </p>
-                  <div className="h-1 w-12 bg-brand-teal/40 rounded-full mx-auto" />
-                </div>
+                {heroData.moto && heroData.moto.trim() !== '' && (
+                  <div className="space-y-6 max-w-3xl mx-auto pt-10 md:pt-16">
+                    <p className="text-lg md:text-2xl font-sans font-medium tracking-tight leading-[1.3] text-center text-white/90 px-4 whitespace-pre-wrap">
+                      {heroData.moto}
+                    </p>
+                    <div className="h-1 w-12 bg-brand-teal/40 rounded-full mx-auto" />
+                  </div>
+                )}
               </div>
             </div>
 
@@ -577,8 +603,8 @@ export default function Home() {
                     }`}
                   >
                     <div className="flex items-center gap-4">
-                      <div className={`h-px w-6 ${idx % 2 === 0 ? 'bg-white' : 'bg-brand-yellow'}`} />
-                      <p className={`text-[10px] font-black uppercase tracking-[0.4em] ${idx % 2 === 0 ? 'text-white' : 'text-brand-yellow'}`}>
+                      <div className={`h-px w-6 ${idx % 2 === 0 ? 'bg-brand-yellow' : 'bg-brand-teal'}`} />
+                      <p className={`text-[10px] font-black uppercase tracking-[0.4em] ${idx % 2 === 0 ? 'text-brand-yellow' : 'text-brand-teal'}`}>
                         {section.tag}
                       </p>
                     </div>
@@ -597,7 +623,7 @@ export default function Home() {
 
             {/* Dynamic Info Bar */}
             {infoItems.length > 0 && (
-              <div className="lg:col-span-12 mt-1 mb-8">
+              <div className="lg:col-span-12 -mt-6 lg:-mt-8 mb-8 relative z-20">
                 <motion.div 
                   initial={{ opacity: 0, y: 30 }}
                   whileInView={{ opacity: 1, y: 0 }}
@@ -608,7 +634,7 @@ export default function Home() {
                     {infoItems.map((item, idx) => (
                       <React.Fragment key={item.id}>
                         <div className="space-y-2 max-w-xs">
-                          <div className="flex items-center gap-3 text-brand-yellow mb-1">
+                          <div className="flex items-center gap-3 text-brand-yellow mb-4">
                             {(() => {
                               const Icon = COMMUNITY_ICON_MAP[item.icon] || MapPin;
                               return <Icon size={14} className="fill-current" />;
@@ -632,21 +658,23 @@ export default function Home() {
               </div>
             )}
 
-            <div className="lg:col-span-12 mt-2 mb-2 flex flex-col items-center">
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 1 }}
-                className="max-w-2xl text-center space-y-4"
-              >
-                <div className="h-px w-12 bg-brand-teal/20 mx-auto" />
-                <p className="text-xl md:text-3xl font-sans font-bold leading-relaxed text-brand-teal tracking-tight">
-                  {heroData.quote}
-                </p>
-                <div className="h-px w-12 bg-brand-teal/20 mx-auto" />
-              </motion.div>
-            </div>
+            {heroData.quote && heroData.quote.trim() !== '' && (
+              <div className="lg:col-span-12 mt-2 mb-2 flex flex-col items-center">
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 1 }}
+                  className="max-w-2xl text-center space-y-4"
+                >
+                  <div className="h-px w-12 bg-white/20 mx-auto" />
+                  <p className="text-lg md:text-2xl font-sans font-medium tracking-tight leading-[1.3] text-white whitespace-pre-wrap">
+                    {heroData.quote}
+                  </p>
+                  <div className="h-px w-12 bg-white/20 mx-auto" />
+                </motion.div>
+              </div>
+            )}
           </motion.div>
         </div>
       </section>
@@ -881,25 +909,19 @@ export default function Home() {
 
                       {/* Závěrečné slovo */}
                       {item.closingWordName && (
-                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6 text-white pt-2">
-                          <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center text-white text-xs font-black tracking-widest shrink-0 shadow-lg">
-                              {item.closingWordName.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2)}
-                            </div>
-                            <div className="text-left">
-                              <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/40 mb-1 leading-none">Závěrečné slovo</p>
-                              <p className="text-xl font-bold tracking-tight text-white leading-none">{item.closingWordName}</p>
-                            </div>
+                        <div className="flex items-start gap-4 text-white pt-2">
+                          <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center text-white text-xs font-black tracking-widest shrink-0 shadow-lg mt-1">
+                            {item.closingWordName.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2)}
                           </div>
-                          
-                          {item.closingWordRole && (
-                            <div className="flex items-center gap-6 flex-1">
-                              <div className="hidden sm:block w-px h-8 bg-white/10" />
-                              <p className="text-white/60 font-medium italic text-lg leading-relaxed">
+                          <div className="text-left">
+                            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/40 mb-3 leading-none">Závěrečné slovo</p>
+                            <p className="text-xl font-bold tracking-tight text-white mb-0.5">{item.closingWordName}</p>
+                            {item.closingWordRole && (
+                              <p className="text-sm text-white/50 font-medium">
                                 {item.closingWordRole}
                               </p>
-                            </div>
-                          )}
+                            )}
+                          </div>
                         </div>
                       )}
                     </motion.div>
@@ -1010,7 +1032,7 @@ export default function Home() {
                   const n = s.name?.trim().toLowerCase() || '';
                   const d = s.description?.toLowerCase() || '';
                   const hasItems = s.items && s.items.length > 0;
-                  return t === 'organizace' || n.includes('organizace') || d.includes('neziskovky') || (hasItems && !s.tag);
+                  return t === 'organizace' || t === 'velká sekce' || n.includes('organizace') || d.includes('neziskovky') || (hasItems && !s.tag);
                 }).map((section) => {
                   const IconComponent = (section.icon && COMMUNITY_ICON_MAP[section.icon]) ? COMMUNITY_ICON_MAP[section.icon] : Heart;
                   
@@ -1048,7 +1070,7 @@ export default function Home() {
                   const n = s.name?.trim().toLowerCase() || '';
                   const d = s.description?.toLowerCase() || '';
                   const hasItems = s.items && s.items.length > 0;
-                  return t === 'organizace' || n.includes('organizace') || d.includes('neziskovky') || (hasItems && !s.tag);
+                  return t === 'organizace' || t === 'velká sekce' || n.includes('organizace') || d.includes('neziskovky') || (hasItems && !s.tag);
                 }).length === 0 && (
                   <div className="flex-grow flex items-center justify-center">
                     <div className="py-12 px-6 text-center border-2 border-dashed border-white/10 rounded-3xl opacity-30 w-full">
@@ -1071,7 +1093,7 @@ export default function Home() {
                   const n = s.name?.trim().toLowerCase() || '';
                   const d = s.description?.toLowerCase() || '';
                   const hasTag = !!s.tag;
-                  return t.includes('klidu') || n.includes('klidu') || d.includes('klidu') || d.includes('ztišení') || (hasTag && (!s.items || s.items.length === 0));
+                  return t.includes('klidu') || t === 'malá sekce' || t === 'malá' || n.includes('klidu') || d.includes('klidu') || d.includes('ztišení') || (hasTag && (!s.items || s.items.length === 0));
                 }).map((section) => {
                   const IconComponent = (section.icon && COMMUNITY_ICON_MAP[section.icon]) ? COMMUNITY_ICON_MAP[section.icon] : Pause;
                   
@@ -1105,11 +1127,11 @@ export default function Home() {
                   const n = s.name?.trim().toLowerCase() || '';
                   const d = s.description?.toLowerCase() || '';
                   const hasTag = !!s.tag;
-                  return t.includes('klidu') || n.includes('klidu') || d.includes('klidu') || d.includes('ztišení') || (hasTag && (!s.items || s.items.length === 0));
+                  return t.includes('klidu') || t === 'malá sekce' || t === 'malá' || n.includes('klidu') || d.includes('klidu') || d.includes('ztišení') || (hasTag && (!s.items || s.items.length === 0));
                 }).length === 0 && (
                   <div className="flex-grow flex items-center justify-center">
                     <div className="py-12 px-6 text-center border-2 border-dashed border-white/10 rounded-3xl opacity-30 w-full">
-                      <p className="text-xs font-bold uppercase tracking-widest text-white">Sekce Zóna klidu se připravuje</p>
+                      <p className="text-xs font-bold uppercase tracking-widest text-white">Sekce Malá sekce se připravuje</p>
                     </div>
                   </div>
                 )}
@@ -1141,8 +1163,8 @@ export default function Home() {
                   className={`${idx % 2 === 0 ? 'bg-black/20' : 'bg-black/40'} p-10 md:p-14 space-y-8 relative group overflow-hidden rounded-3xl border border-white/5`}
                 >
                   <div className="flex items-center gap-4">
-                    <div className={`h-0.5 w-8 ${idx % 2 === 0 ? 'bg-brand-yellow' : 'bg-white'}`} />
-                    <p className={`text-xs font-black uppercase tracking-[0.4em] ${idx % 2 === 0 ? 'text-brand-yellow' : 'text-white'}`}>{section.tag}</p>
+                    <div className={`h-0.5 w-8 ${idx % 2 === 0 ? 'bg-brand-yellow' : 'bg-brand-teal'}`} />
+                    <p className={`text-xs font-black uppercase tracking-[0.4em] ${idx % 2 === 0 ? 'text-brand-yellow' : 'text-brand-teal'}`}>{section.tag}</p>
                   </div>
                   <p className="text-2xl md:text-3xl font-sans font-bold leading-tight tracking-tighter">
                     {section.title}
@@ -1207,41 +1229,56 @@ export default function Home() {
                 <h2 className="text-3xl md:text-5xl font-sans font-black tracking-tighter text-black uppercase transform skew-x-6">BUĎTE U TOHO.</h2>
               </div>
               <div className="text-lg text-white max-w-sm leading-relaxed font-medium space-y-4">
-                {contactInfo.welcomeText.split('\n').filter(line => line.trim() !== '').map((line, i) => (
-                  <p key={i}>{line}</p>
-                ))}
-                <p className="text-brand-teal font-black pt-2 uppercase">{contactInfo.tagline}</p>
+                {(!contactInfo.welcomeText || contactInfo.welcomeText.trim() === '') ? (
+                  <p className="italic text-white/50">Uvítací text se připravuje...</p>
+                ) : (
+                  contactInfo.welcomeText.split('\n').filter(line => line.trim() !== '').map((line, i) => (
+                    <p key={i}>{line}</p>
+                  ))
+                )}
+                {contactInfo.tagline && contactInfo.tagline.trim() !== '' && (
+                  <p className="text-brand-teal font-black pt-2 uppercase">{contactInfo.tagline}</p>
+                )}
               </div>
             </div>
 
             <div className="space-y-8 pt-6 border-t border-white/10">
               <p className="text-sm font-bold uppercase tracking-[0.3em] text-white/30">Kontakt</p>
               <div className="flex flex-col gap-8">
-                <a href={`mailto:${contactInfo.email}`} className="flex items-center gap-6 group">
+                <a href={contactInfo.email ? `mailto:${contactInfo.email}` : '#'} className="flex items-center gap-6 group">
                   <div className="w-14 h-14 rounded-full bg-white/5 flex items-center justify-center text-white/40 group-hover:bg-brand-teal group-hover:text-black transition-all">
                     <Mail size={24} />
                   </div>
                   <div className="flex flex-col">
                     <span className="text-xs font-bold uppercase tracking-widest text-white/30 mb-1">Napište nám</span>
-                    <span className="text-xl font-medium tracking-tight text-white group-hover:text-brand-teal transition-colors">{contactInfo.email}</span>
+                    <span className="text-xl font-medium tracking-tight text-white group-hover:text-brand-teal transition-colors">
+                      {contactInfo.email || "E-mail připravujeme"}
+                    </span>
                   </div>
                 </a>
-                <a href={`tel:${contactInfo.phone.replace(/\s/g, '')}`} className="flex items-center gap-6 group">
+                <a href={contactInfo.phone ? `tel:${contactInfo.phone.replace(/\s/g, '')}` : '#'} className="flex items-center gap-6 group">
                   <div className="w-14 h-14 rounded-full bg-white/5 flex items-center justify-center text-white/40 group-hover:bg-brand-teal group-hover:text-black transition-all">
                     <Phone size={24} />
                   </div>
                   <div className="flex flex-col">
                     <span className="text-xs font-bold uppercase tracking-widest text-white/30 mb-1">Zavolejte nám</span>
-                    <span className="text-xl font-medium tracking-tight text-white group-hover:text-brand-teal transition-colors">{contactInfo.phone}</span>
+                    <span className="text-xl font-medium tracking-tight text-white group-hover:text-brand-teal transition-colors">
+                      {contactInfo.phone || "Telefon připravujeme"}
+                    </span>
                   </div>
                 </a>
               </div>
             </div>
 
-            <div className="flex items-center gap-4 pt-4">
-              <Heart size={24} className="text-brand-red animate-pulse" />
-              <div className="text-[10px] font-black uppercase tracking-[0.5em] text-white/10">
-                <p>© 2026 DEN PRO BRNO • COMMUNITY REBORN</p>
+            <div className="flex flex-col gap-4 pt-10 border-t border-white/10">
+              <div className="flex items-center gap-4">
+                <Heart size={24} className="text-brand-red animate-pulse" />
+                <div className="text-[10px] font-black uppercase tracking-[0.5em] text-white/30">
+                  <p>© 2026 DEN PRO BRNO</p>
+                </div>
+              </div>
+              <div className="text-[10px] font-bold uppercase tracking-widest text-white/30">
+                Web vytvořila digitální agentura <a href="https://digifire.cz" target="_blank" rel="noopener noreferrer" className="text-brand-teal hover:text-white transition-colors">Digifire.cz</a>
               </div>
             </div>
           </div>
@@ -1276,7 +1313,7 @@ export default function Home() {
                       <input 
                         required
                         type="text" 
-                        placeholder="Vaše jméno" 
+                        
                         value={contactForm.name}
                         onChange={e => setContactForm({...contactForm, name: e.target.value})}
                         className="w-full bg-white/10 border border-white/20 rounded-xl px-5 py-4 text-white placeholder:text-white/40 focus:outline-none focus:border-brand-teal/50 transition-colors"
@@ -1287,7 +1324,7 @@ export default function Home() {
                       <input 
                         required
                         type="email" 
-                        placeholder="vas@email.cz" 
+                        
                         value={contactForm.email}
                         onChange={e => setContactForm({...contactForm, email: e.target.value})}
                         className="w-full bg-white/10 border border-white/20 rounded-xl px-5 py-4 text-white placeholder:text-white/40 focus:outline-none focus:border-brand-teal/50 transition-colors"
@@ -1298,7 +1335,7 @@ export default function Home() {
                       <textarea 
                         required
                         rows={4}
-                        placeholder="Jak vám můžeme pomoci?" 
+                        
                         value={contactForm.message}
                         onChange={e => setContactForm({...contactForm, message: e.target.value})}
                         className="w-full bg-white/10 border border-white/20 rounded-xl px-5 py-4 text-white placeholder:text-white/40 focus:outline-none focus:border-brand-teal/50 transition-colors resize-none"

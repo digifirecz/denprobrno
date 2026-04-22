@@ -67,7 +67,7 @@ export default function Login() {
                   type="email" 
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="vas@email.cz"
+                 
                   required
                   className="w-full bg-white/5 border border-white/10 rounded-xl pl-12 pr-5 py-4 text-white placeholder:text-white/20 focus:outline-none focus:border-brand-teal/50 transition-colors"
                 />
@@ -82,7 +82,7 @@ export default function Login() {
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
+                 
                   required
                   className="w-full bg-white/5 border border-white/10 rounded-xl pl-12 pr-5 py-4 text-white placeholder:text-white/20 focus:outline-none focus:border-brand-teal/50 transition-colors"
                 />

@@ -40,10 +40,10 @@ service cloud.firestore {
     // --- Entity Validations ---
 
     function isValidMusicProgram(data) {
-      return data.keys().hasAll(['name', 'tag', 'desc']) &&
+      return data.keys().hasAll(['name']) &&
              data.name is string && data.name.size() <= 100 &&
-             data.tag is string && data.tag.size() <= 50 &&
-             data.desc is string && data.desc.size() <= 3000 &&
+             (!('tag' in data) || (data.tag is string && data.tag.size() <= 50)) &&
+             (!('desc' in data) || (data.desc is string && data.desc.size() <= 3000)) &&
              (!('video' in data) || data.video is string) &&
              (!('createdAt' in data) || data.createdAt is timestamp) &&
              (!('updatedAt' in data) || data.updatedAt is timestamp);
@@ -60,10 +60,10 @@ service cloud.firestore {
     }
 
     function isValidFamilyProgram(data) {
-      return data.keys().hasAll(['title', 'tag', 'description']) &&
+      return data.keys().hasAll(['title', 'description']) &&
              data.title is string && data.title.size() <= 100 &&
-             data.tag is string && data.tag.size() <= 50 &&
              data.description is string && data.description.size() <= 1000 &&
+             (!('tag' in data) || (data.tag is string && data.tag.size() <= 50)) &&
              (!('activities' in data) || data.activities is list) &&
              (!('mainPoint' in data) || data.mainPoint is string) &&
              (!('mainPointTime' in data) || data.mainPointTime is string) &&
@@ -87,10 +87,10 @@ service cloud.firestore {
     }
 
     function isValidCommunitySection(data) {
-      return data.keys().hasAll(['title', 'name', 'description']) &&
+      return data.keys().hasAll(['title', 'name']) &&
              data.title is string && data.title.size() <= 200 &&
              data.name is string && data.name.size() <= 200 &&
-             data.description is string && data.description.size() <= 3000 &&
+             (!('description' in data) || (data.description is string && data.description.size() <= 3000)) &&
              (!('tag' in data) || data.tag is string) &&
              (!('items' in data) || data.items is list) &&
              (!('order' in data) || data.order is number) &&
@@ -99,10 +99,10 @@ service cloud.firestore {
     }
 
     function isValidAboutSection(data) {
-      return data.keys().hasAll(['tag', 'title', 'description']) &&
-             data.tag is string && data.tag.size() <= 200 &&
+      return data.keys().hasAll(['title']) &&
              data.title is string && data.title.size() <= 200 &&
-             data.description is string && data.description.size() <= 5000 &&
+             (!('tag' in data) || (data.tag is string && data.tag.size() <= 200)) &&
+             (!('description' in data) || (data.description is string && data.description.size() <= 5000)) &&
              (!('order' in data) || data.order is number) &&
              (!('createdAt' in data) || data.createdAt is timestamp) &&
              (!('updatedAt' in data) || data.updatedAt is timestamp);
@@ -139,9 +139,9 @@ service cloud.firestore {
     }
 
     function isValidInfoHeaderSettings(data) {
-      return data.keys().hasAll(['topTitle', 'description']) &&
-             data.topTitle is string && data.topTitle.size() <= 200 &&
+      return data.keys().hasAll(['description']) &&
              data.description is string && data.description.size() <= 1000 &&
+             (!('topTitle' in data) || (data.topTitle is string && data.topTitle.size() <= 200)) &&
              (!('updatedAt' in data) || data.updatedAt is timestamp);
     }
 
@@ -152,23 +152,21 @@ service cloud.firestore {
     }
 
     function isValidIntroSection(data) {
-      return data.keys().hasAll(['tag', 'title', 'description']) &&
-             data.keys().size() >= 3 &&
-             data.tag is string && data.tag.size() <= 200 &&
+      return data.keys().hasAll(['title']) &&
              data.title is string && data.title.size() <= 600 &&
-             data.description is string && data.description.size() <= 5000 &&
+             (!('tag' in data) || (data.tag is string && data.tag.size() <= 200)) &&
+             (!('description' in data) || (data.description is string && data.description.size() <= 5000)) &&
              (!('order' in data) || data.order is number) &&
              (!('createdAt' in data) || data.createdAt is timestamp) &&
              (!('updatedAt' in data) || data.updatedAt is timestamp);
     }
 
     function isValidIntroInfoItem(data) {
-      return data.keys().hasAll(['icon', 'tag', 'title', 'description']) &&
-             data.keys().size() >= 4 &&
-             data.icon is string && data.icon.size() <= 100 &&
-             data.tag is string && data.tag.size() <= 200 &&
+      return data.keys().hasAll(['title', 'tag']) &&
              data.title is string && data.title.size() <= 500 &&
-             data.description is string && data.description.size() <= 1000 &&
+             data.tag is string && data.tag.size() <= 200 &&
+             (!('icon' in data) || (data.icon is string && data.icon.size() <= 100)) &&
+             (!('description' in data) || (data.description is string && data.description.size() <= 1000)) &&
              (!('order' in data) || data.order is number) &&
              (!('createdAt' in data) || data.createdAt is timestamp) &&
              (!('updatedAt' in data) || data.updatedAt is timestamp);

@@ -1,3 +1,4 @@
+import { Toaster, toast } from 'react-hot-toast';
 import { Routes, Route, Link, useNavigate } from 'react-router-dom';
 import { signOut } from 'firebase/auth';
 import { auth, db } from '../lib/firebase';
@@ -246,10 +247,11 @@ const ProgramDashboard = () => {
         description: headerFormData.description,
         updatedAt: serverTimestamp()
       });
+      toast.success('Záhlaví bylo úspěšně upraveno!');
       setIsHeaderModalOpen(false);
     } catch (err: any) {
       console.error("Error saving header:", err);
-      alert("Chyba při ukládání záhlaví");
+      toast.error("Chyba při ukládání záhlaví");
     } finally {
       setIsHeaderSubmitting(false);
     }
@@ -330,11 +332,11 @@ const ProgramDashboard = () => {
               <form onSubmit={handleHeaderSubmit} className="space-y-6">
                 <div className="space-y-4">
                   <div className="space-y-2 text-left">
-                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Horní titulek (nadřazený)</label>
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Horní titulek <span className="text-brand-red">*</span></label>
                     <input required value={headerFormData.topTitle} onChange={e => setHeaderFormData({...headerFormData, topTitle: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all" />
                   </div>
                   <div className="space-y-2 text-left">
-                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Hlavní popis (podnadpis)</label>
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Hlavní popis <span className="text-brand-red">*</span></label>
                     <textarea required rows={3} value={headerFormData.description} onChange={e => setHeaderFormData({...headerFormData, description: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none resize-none transition-all" />
                   </div>
                 </div>
@@ -351,7 +353,7 @@ const ProgramDashboard = () => {
   );
 };
 
-const AdminDashboard = ({ artistsCount, infoCount, talkshowsCount, familyCount, communityCount, aboutCount, submissionsCount }: { artistsCount: number, infoCount: number, talkshowsCount: number, familyCount: number, communityCount: number, aboutCount: number, submissionsCount: number }) => (
+const AdminDashboard = ({ artistsCount, infoCount, talkshowsCount, familyCount, communityCount, aboutCount, submissionsCount, visitsCount }: { artistsCount: number, infoCount: number, talkshowsCount: number, familyCount: number, communityCount: number, aboutCount: number, submissionsCount: number, visitsCount: number }) => (
   <div className="space-y-12 animate-in fade-in duration-700">
     <header className="flex justify-between items-center bg-white p-8 rounded-3xl border border-slate-200 shadow-sm shadow-slate-200/50 text-slate-900 text-left">
       <div className="text-left">
@@ -371,6 +373,7 @@ const AdminDashboard = ({ artistsCount, infoCount, talkshowsCount, familyCount, 
         { label: 'Praktické info', count: infoCount, icon: Info, color: 'bg-slate-100', link: '/admin/info' },
         { label: 'O festivalu', count: aboutCount, icon: Heart, color: 'bg-slate-100', link: '/admin/about' },
         { label: 'Zprávy z webu', count: submissionsCount, icon: MessageSquare, color: 'bg-slate-100', link: '/admin/contact' },
+        { label: 'Celkem návštěv', count: visitsCount, icon: BarChart3, color: 'bg-brand-teal/20', link: '#' },
       ].map((stat, i) => (
         <motion.div 
           key={stat.label}
@@ -388,9 +391,11 @@ const AdminDashboard = ({ artistsCount, infoCount, talkshowsCount, familyCount, 
               <p className="text-3xl font-black text-slate-900">{stat.count}</p>
             </div>
           </div>
-          <Link to={stat.link} className="w-10 h-10 rounded-xl bg-slate-100 text-slate-400 flex items-center justify-center transition-all hover:bg-brand-teal hover:text-black">
-            <ChevronRight size={20} />
-          </Link>
+          {stat.link !== '#' && (
+            <Link to={stat.link} className="w-10 h-10 rounded-xl bg-slate-100 text-slate-400 flex items-center justify-center transition-all hover:bg-brand-teal hover:text-black">
+              <ChevronRight size={20} />
+            </Link>
+          )}
         </motion.div>
       ))}
     </div>
@@ -428,6 +433,7 @@ const IntroManager = () => {
   const [isSavingInfoItem, setIsSavingInfoItem] = useState(false);
   const [isInfoDeleteModalOpen, setIsInfoDeleteModalOpen] = useState(false);
   const [infoItemToDelete, setInfoItemToDelete] = useState<IntroInfoItem | null>(null);
+  const [isIconModalOpen, setIsIconModalOpen] = useState(false);
   const [showLimitAlert, setShowLimitAlert] = useState(false);
 
   useEffect(() => {
@@ -437,8 +443,8 @@ const IntroManager = () => {
         const data = snapshot.data();
         setHeroData({
           imageUrl: data.imageUrl || '/hero-full-trans.png',
-          moto: data.moto || 'Naším cílem je přinést do města radost, povzbuzení a naději, která má skutečný přesah',
-          quote: data.quote || 'Přijďte strávit den, který může něco změnit'
+          moto: data.moto ?? 'Naším cílem je přinést do města radost, povzbuzení a naději, která má skutečný přesah',
+          quote: data.quote ?? 'Přijďte strávit den, který může něco změnit'
         });
       }
     });
@@ -482,7 +488,7 @@ const IntroManager = () => {
       }
     } catch (err) {
       console.error('Upload failed:', err);
-      alert('Chyba při nahrávání obrázku');
+      toast.error('Chyba při nahrávání obrázku');
     } finally {
       setIsUploading(false);
     }
@@ -496,9 +502,10 @@ const IntroManager = () => {
         ...heroData,
         updatedAt: serverTimestamp()
       });
+      toast.success('Úspěšně upraveno!');
     } catch (err) {
       console.error(err);
-      alert("Chyba při ukládání");
+      toast.error("Chyba při ukládání");
     } finally {
       setIsSavingHero(false);
     }
@@ -534,18 +541,12 @@ const IntroManager = () => {
         updatedAt: serverTimestamp()
       };
 
-      if (editingSection) {
-        await updateDoc(doc(db, 'introSections', editingSection.id), data);
-      } else {
-        await addDoc(collection(db, 'introSections'), {
-          ...data,
-          createdAt: serverTimestamp()
-        });
-      }
+      
+      toast.success(editingSection ? 'Úspěšně upraveno!' : 'Úspěšně vytvořeno!');
       setIsModalOpen(false);
     } catch (err) {
       console.error(err);
-      alert('Chyba při ukládání sekce');
+      toast.error('Chyba při ukládání sekce');
     } finally {
       setIsSavingSection(false);
     }
@@ -555,11 +556,12 @@ const IntroManager = () => {
     if (!sectionToDelete) return;
     try {
       await deleteDoc(doc(db, 'introSections', sectionToDelete.id));
+      toast.success('Úspěšně smazáno!');
       setIsDeleteModalOpen(false);
       setSectionToDelete(null);
     } catch (err) {
       console.error(err);
-      alert('Chyba při mazání');
+      toast.error('Chyba při mazání');
     }
   };
 
@@ -603,10 +605,11 @@ const IntroManager = () => {
           createdAt: serverTimestamp()
         });
       }
+      toast.success(editingInfoItem ? 'Úspěšně upraveno!' : 'Úspěšně vytvořeno!');
       setIsInfoModalOpen(false);
     } catch (err) {
       console.error(err);
-      alert('Chyba při ukládání položky');
+      toast.error('Chyba při ukládání položky');
     } finally {
       setIsSavingInfoItem(false);
     }
@@ -616,11 +619,12 @@ const IntroManager = () => {
     if (!infoItemToDelete) return;
     try {
       await deleteDoc(doc(db, 'introInfoItems', infoItemToDelete.id));
+      toast.success('Úspěšně smazáno!');
       setIsInfoDeleteModalOpen(false);
       setInfoItemToDelete(null);
     } catch (err) {
       console.error(err);
-      alert('Chyba při mazání');
+      toast.error('Chyba při mazání');
     }
   };
 
@@ -644,7 +648,7 @@ const IntroManager = () => {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
               <div className="space-y-6">
                 <div className="space-y-2">
-                  <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Úvodní hlavní kmen (Logo festivalu)</label>
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Úvodní hlavní kmen</label>
                   <div className="relative group">
                     <div className="w-full h-64 bg-brand-red rounded-3xl border-2 border-dashed border-white/20 flex items-center justify-center overflow-hidden transition-all group-hover:border-brand-teal/50">
                       <img 
@@ -673,12 +677,11 @@ const IntroManager = () => {
                 <div className="space-y-2">
                   <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Motto festivalu</label>
                   <textarea 
-                    required 
                     rows={3}
                     value={heroData.moto} 
                     onChange={e => setHeroData({...heroData, moto: e.target.value})} 
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal focus:ring-1 focus:ring-brand-teal/20 outline-none resize-none transition-all" 
-                    placeholder="Naším cílem je přinést do města radost..."
+                   
                   />
                   <p className="text-[10px] text-slate-400 ml-1">Tento text se zobrazuje uprostřed pod hlavním logem.</p>
                 </div>
@@ -686,11 +689,10 @@ const IntroManager = () => {
                 <div className="space-y-2">
                   <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Citát / Pozvánka</label>
                   <input 
-                    required 
                     value={heroData.quote} 
                     onChange={e => setHeroData({...heroData, quote: e.target.value})} 
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal focus:ring-1 focus:ring-brand-teal/20 outline-none transition-all" 
-                    placeholder="Přijďte strávit den..."
+                   
                   />
                   <p className="text-[10px] text-slate-400 ml-1">Tento text se zobrazuje pod mottem.</p>
                 </div>
@@ -702,7 +704,12 @@ const IntroManager = () => {
                   {/* Hero Part */}
                   <div className="flex flex-col items-center space-y-4">
                     <img src={heroData.imageUrl} alt="Hero" className="max-w-[150px] h-auto drop-shadow-2xl opacity-90" />
-                    <p className="text-white/80 text-xs font-medium leading-relaxed max-w-[200px]">{heroData.moto}</p>
+                    {heroData.moto && heroData.moto.trim() !== '' && (
+                      <>
+                        <p className="text-white/80 text-xs font-medium leading-relaxed max-w-[200px]">{heroData.moto}</p>
+                        <div className="h-0.5 w-6 bg-brand-teal/40 rounded-full mx-auto" />
+                      </>
+                    )}
                   </div>
 
                   {/* Placeholder for content items */}
@@ -713,13 +720,15 @@ const IntroManager = () => {
                   </div>
 
                   {/* Quote Part */}
-                  <div className="space-y-3 w-full">
-                    <div className="h-px w-6 bg-brand-teal/20 mx-auto" />
-                    <p className="text-[11px] font-bold leading-relaxed text-brand-teal tracking-tight px-6 italic">
-                      {heroData.quote}
-                    </p>
-                    <div className="h-px w-6 bg-brand-teal/20 mx-auto" />
-                  </div>
+                  {heroData.quote && heroData.quote.trim() !== '' && (
+                    <div className="space-y-3 w-full flex flex-col items-center">
+                      <div className="h-px w-6 bg-white/20 mx-auto" />
+                      <p className="text-white text-xs font-medium leading-relaxed max-w-[200px] text-center px-6">
+                        {heroData.quote}
+                      </p>
+                      <div className="h-px w-6 bg-white/20 mx-auto" />
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -773,8 +782,8 @@ const IntroManager = () => {
                     }`}
                   >
                     <div className="flex items-center gap-4">
-                      <div className={`h-px w-6 ${idx % 2 === 0 ? 'bg-white' : 'bg-brand-yellow'}`} />
-                      <p className={`text-[10px] font-black uppercase tracking-[0.4em] ${idx % 2 === 0 ? 'text-white' : 'text-brand-yellow'}`}>
+                      <div className={`h-px w-6 ${idx % 2 === 0 ? 'bg-brand-yellow' : 'bg-brand-teal'}`} />
+                      <p className={`text-[10px] font-black uppercase tracking-[0.4em] ${idx % 2 === 0 ? 'text-brand-yellow' : 'text-brand-teal'}`}>
                         {section.tag}
                       </p>
                     </div>
@@ -852,7 +861,7 @@ const IntroManager = () => {
                 infoItems.map((item, idx) => (
                   <React.Fragment key={item.id}>
                     <div className="space-y-2 text-left max-w-[280px]">
-                      <div className="flex items-center gap-3 text-brand-yellow mb-1">
+                      <div className="flex items-center gap-3 text-brand-yellow mb-4">
                         {(() => {
                           const Icon = COMMUNITY_ICONS.find(i => i.id === item.icon)?.icon || MapPin;
                           return <Icon size={14} className="fill-current" />;
@@ -914,41 +923,45 @@ const IntroManager = () => {
               </div>
 
               <form onSubmit={handleInfoItemSubmit} className="space-y-6">
-                <div className="space-y-4 text-left">
+                <div className="space-y-3 text-left">
                   <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Vyberte ikonu</label>
-                  <div className="grid grid-cols-6 sm:grid-cols-9 gap-2">
-                    {COMMUNITY_ICONS.map((icon) => (
-                      <button
-                        key={icon.id}
-                        type="button"
-                        onClick={() => setInfoItemFormData({ ...infoItemFormData, icon: icon.id })}
-                        className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
-                          infoItemFormData.icon === icon.id 
-                          ? 'bg-brand-teal text-black shadow-lg scale-110' 
-                          : 'bg-slate-50 text-slate-400 hover:bg-slate-100 hover:text-slate-600'
-                        }`}
-                      >
-                        <icon.icon size={18} />
-                      </button>
-                    ))}
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsIconModalOpen(true)}
+                    className="flex items-center gap-4 p-4 bg-slate-50 border border-slate-200 rounded-2xl w-full hover:border-brand-teal transition-all group"
+                  >
+                    <div className="w-12 h-12 rounded-xl bg-white border border-slate-100 flex items-center justify-center text-brand-teal shadow-sm group-hover:shadow-md transition-all">
+                      {(() => {
+                        const IconData = COMMUNITY_ICONS.find(i => i.id === infoItemFormData.icon);
+                        const Icon = IconData ? IconData.icon : MapPin;
+                        return <Icon size={24} />;
+                      })()}
+                    </div>
+                    <div className="text-left">
+                      <p className="text-sm font-black text-slate-900 uppercase tracking-tighter">Vybrat ikonu</p>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Kliknutím změníte symbol položky</p>
+                    </div>
+                    <div className="ml-auto w-10 h-10 rounded-lg bg-white flex items-center justify-center text-slate-300 group-hover:text-brand-teal transition-all">
+                      <Plus size={18} />
+                    </div>
+                  </button>
                 </div>
 
                 <div className="grid grid-cols-1 gap-6">
                   <div className="space-y-2 text-left">
-                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Štítek / Tag</label>
-                    <input required value={infoItemFormData.tag} onChange={e => setInfoItemFormData({...infoItemFormData, tag: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all" placeholder="Místo konání" />
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Štítek / Tag <span className="text-brand-red">*</span></label>
+                    <input required value={infoItemFormData.tag} onChange={e => setInfoItemFormData({...infoItemFormData, tag: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all" />
                   </div>
                 </div>
 
                 <div className="space-y-2 text-left">
-                  <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Hlavní název</label>
-                  <input required value={infoItemFormData.title} onChange={e => setInfoItemFormData({...infoItemFormData, title: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all" placeholder="u Janáčkova divadla" />
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Hlavní název <span className="text-brand-red">*</span></label>
+                  <input required value={infoItemFormData.title} onChange={e => setInfoItemFormData({...infoItemFormData, title: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all" />
                 </div>
 
                 <div className="space-y-2 text-left">
                   <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Doplňující text / Popis</label>
-                  <input required value={infoItemFormData.description} onChange={e => setInfoItemFormData({...infoItemFormData, description: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all" placeholder="Brno, Česká republika" />
+                  <input value={infoItemFormData.description} onChange={e => setInfoItemFormData({...infoItemFormData, description: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all" />
                 </div>
 
                 <div className="flex gap-4 pt-4">
@@ -956,6 +969,53 @@ const IntroManager = () => {
                   <button type="button" onClick={() => setIsInfoModalOpen(false)} className="flex-1 py-4 bg-slate-50 text-slate-400 rounded-xl font-black uppercase tracking-widest hover:bg-slate-100 transition-all">Zrušit</button>
                 </div>
               </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Icon Selection Modal for IntroManager */}
+      <AnimatePresence>
+        {isIconModalOpen && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-6 bg-black/80 backdrop-blur-sm">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9 }} 
+              animate={{ opacity: 1, scale: 1 }} 
+              exit={{ opacity: 0, scale: 0.9 }} 
+              className="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl p-10 font-sans"
+            >
+              <div className="flex justify-between items-center mb-8 text-left">
+                <div className="text-left">
+                  <h3 className="text-2xl font-black uppercase tracking-tighter text-slate-900">Vybrat ikonu</h3>
+                  <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">Zvolte symbol pro položku</p>
+                </div>
+                <button type="button" onClick={() => setIsIconModalOpen(false)} className="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400 hover:bg-slate-100 transition-all group"><X size={24} className="group-hover:rotate-90 transition-transform duration-300" /></button>
+              </div>
+
+              <div className="grid grid-cols-4 gap-3 overflow-y-auto max-h-[50vh] pr-2 custom-scrollbar">
+                {COMMUNITY_ICONS.map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => {
+                      setInfoItemFormData({ ...infoItemFormData, icon: item.id });
+                      setIsIconModalOpen(false);
+                    }}
+                    className={`p-6 rounded-2xl border transition-all flex flex-col items-center gap-3 group/icon ${
+                      infoItemFormData.icon === item.id 
+                        ? 'bg-brand-teal/10 border-brand-teal text-brand-teal shadow-inner ring-4 ring-brand-teal/5' 
+                        : 'bg-slate-50 border-slate-100 text-slate-400 hover:border-slate-300 hover:bg-white hover:shadow-md'
+                    }`}
+                  >
+                    <item.icon size={32} className={`transition-transform duration-300 ${infoItemFormData.icon === item.id ? 'scale-110' : 'group-hover/icon:scale-110'}`} />
+                    <span className="text-[8px] font-black uppercase tracking-widest opacity-60">{item.id}</span>
+                  </button>
+                ))}
+              </div>
+
+              <div className="mt-8 pt-8 border-t border-slate-100 italic text-[10px] text-slate-400 text-center uppercase tracking-[0.2em]">
+                Vybraná ikona se okamžitě projeví ve formuláři
+              </div>
             </motion.div>
           </div>
         )}
@@ -994,21 +1054,19 @@ const IntroManager = () => {
               </div>
 
               <form onSubmit={handleSectionSubmit} className="space-y-6">
-                <div className="grid grid-cols-1 gap-6">
-                  <div className="space-y-2 text-left">
-                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Tag</label>
-                    <input required value={sectionFormData.tag} onChange={e => setSectionFormData({...sectionFormData, tag: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all" placeholder="Prostor pro setkání" />
-                  </div>
+                <div className="space-y-2 text-left">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Tag</label>
+                  <input value={sectionFormData.tag} onChange={e => setSectionFormData({...sectionFormData, tag: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all" />
                 </div>
 
                 <div className="space-y-2 text-left">
-                  <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Titulek</label>
-                  <input required value={sectionFormData.title} onChange={e => setSectionFormData({...sectionFormData, title: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all" placeholder="Den pro Brno je otevřený..." />
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Titulek <span className="text-brand-red">*</span></label>
+                  <input required value={sectionFormData.title} onChange={e => setSectionFormData({...sectionFormData, title: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all" />
                 </div>
 
                 <div className="space-y-2 text-left">
                   <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Popis</label>
-                  <textarea required rows={4} value={sectionFormData.description} onChange={e => setSectionFormData({...sectionFormData, description: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none resize-none transition-all" placeholder="V samotném srdci města..." />
+                  <textarea rows={4} value={sectionFormData.description} onChange={e => setSectionFormData({...sectionFormData, description: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none resize-none transition-all" />
                 </div>
 
                 <div className="flex gap-4 pt-4">
@@ -1134,10 +1192,11 @@ const ProgramManager = () => {
         subtitle: headerFormData.subtitle,
         updatedAt: serverTimestamp()
       });
+      toast.success('Záhlaví bylo úspěšně upraveno!');
       setIsHeaderModalOpen(false);
     } catch (err: any) {
       console.error("Error saving header:", err);
-      alert("Chyba při ukládání záhlaví");
+      toast.error("Chyba při ukládání záhlaví");
     } finally {
       setIsHeaderSubmitting(false);
     }
@@ -1188,11 +1247,11 @@ const ProgramManager = () => {
           createdAt: serverTimestamp()
         });
       }
+      toast.success(editingArtist ? 'Úspěšně upraveno!' : 'Úspěšně vytvořeno!');
       setIsModalOpen(false);
-      alert('Data byla úspěšně uložena.');
     } catch (err: any) {
       console.error("Error saving to Firestore:", err);
-      alert(`Chyba při ukládání: ${err.message || 'Neznámá chyba'}`);
+      toast.error(`Chyba při ukládání: ${err.message || 'Neznámá chyba'}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -1210,11 +1269,12 @@ const ProgramManager = () => {
     try {
       console.log("Deleting document with ID:", artistToDelete.id);
       await deleteDoc(doc(db, 'musicProgram', artistToDelete.id));
+      toast.success('Úspěšně smazáno!');
       setIsDeleteModalOpen(false);
       setArtistToDelete(null);
     } catch (err: any) {
       console.error("Delete error:", err);
-      alert(`Chyba při mazání: ${err.message || 'Neznámá chyba'}`);
+      toast.error(`Chyba při mazání: ${err.message || 'Neznámá chyba'}`);
     } finally {
       setIsDeleting(false);
     }
@@ -1442,8 +1502,7 @@ const ProgramManager = () => {
             <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="bg-white w-full max-w-2xl rounded-[2.5rem] shadow-2xl p-10 max-h-[90vh] overflow-y-auto">
               <div className="flex justify-between items-center mb-10 text-left">
                 <div className="text-left">
-                  <h3 className="text-2xl font-black uppercase tracking-tighter text-slate-900">{editingArtist ? 'Upravit interpreta' : 'Nový interpret'}</h3>
-                  <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">Hudba</p>
+                  <h3 className="text-2xl font-black uppercase tracking-tighter text-slate-900">{editingArtist ? 'Upravit interpreta' : 'Přidat interpreta'}</h3>
                 </div>
                 <button onClick={() => setIsModalOpen(false)} className="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400 hover:bg-slate-100 transition-all"><X size={24} /></button>
               </div>
@@ -1451,20 +1510,20 @@ const ProgramManager = () => {
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2 text-left">
-                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Název / Kapela</label>
-                    <input required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all" placeholder="Jméno interpreta" />
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Název / Kapela <span className="text-brand-red">*</span></label>
+                    <input required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all" />
                   </div>
                   <div className="space-y-2 text-left">
-                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Tag (Styl)</label>
-                    <input required value={formData.tag} onChange={e => setFormData({...formData, tag: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all" placeholder="Folk / Worship / Pop..." />
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Tag</label>
+                    <input value={formData.tag} onChange={e => setFormData({...formData, tag: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all" />
                   </div>
                   <div className="md:col-span-2 space-y-2 text-left">
                     <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">YouTube Video URL</label>
-                    <input value={formData.video} onChange={e => setFormData({...formData, video: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all" placeholder="https://www.youtube.com/watch?v=..." />
+                    <input value={formData.video} onChange={e => setFormData({...formData, video: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all" />
                   </div>
                   <div className="md:col-span-2 space-y-2 text-left">
-                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Popis / Příběh</label>
-                    <textarea required rows={4} value={formData.desc} onChange={e => setFormData({...formData, desc: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none resize-none transition-all" placeholder="Krátký popis pro návštěvníky..." />
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Popis / Příběh <span className="text-brand-red">*</span></label>
+                    <textarea required rows={4} value={formData.desc} onChange={e => setFormData({...formData, desc: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none resize-none transition-all" />
                   </div>
                 </div>
                 <div className="pt-4 flex gap-4">
@@ -1511,8 +1570,8 @@ const ProgramManager = () => {
 
               <form onSubmit={handleHeaderSubmit} className="space-y-6">
                 <div className="space-y-2 text-left">
-                  <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Podnadpis (v náhledu)</label>
-                  <input required value={headerFormData.subtitle} onChange={e => setHeaderFormData({...headerFormData, subtitle: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all" placeholder="Hudba a koncerty" />
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Podnadpis <span className="text-brand-red">*</span></label>
+                  <input required value={headerFormData.subtitle} onChange={e => setHeaderFormData({...headerFormData, subtitle: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all" />
                 </div>
                 <div className="pt-4 flex gap-4">
                   <button type="submit" disabled={isHeaderSubmitting} className="flex-1 py-4 bg-brand-teal text-black rounded-xl font-black uppercase tracking-widest shadow-lg hover:bg-brand-teal-light transition-all disabled:opacity-50">{isHeaderSubmitting ? 'Ukládám...' : 'Uložit záhlaví'}</button>
@@ -1589,10 +1648,11 @@ const PracticalInfoManager = () => {
         description: headerFormData.description,
         updatedAt: serverTimestamp()
       });
+      toast.success('Záhlaví bylo úspěšně upraveno!');
       setIsHeaderModalOpen(false);
     } catch (err: any) {
       console.error("Error saving header:", err);
-      alert("Chyba při ukládání záhlaví");
+      toast.error("Chyba při ukládání záhlaví");
     } finally {
       setIsHeaderSubmitting(false);
     }
@@ -1635,11 +1695,11 @@ const PracticalInfoManager = () => {
           createdAt: serverTimestamp()
         });
       }
+      toast.success(editingInfo ? 'Úspěšně upraveno!' : 'Úspěšně vytvořeno!');
       setIsModalOpen(false);
-      alert('Data byla úspěšně uložena.');
     } catch (err: any) {
       console.error("Error saving to Firestore:", err);
-      alert(`Chyba při ukládání: ${err.message || 'Neznámá chyba'}`);
+      toast.error(`Chyba při ukládání: ${err.message || 'Neznámá chyba'}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -1656,11 +1716,12 @@ const PracticalInfoManager = () => {
     setIsDeleting(true);
     try {
       await deleteDoc(doc(db, 'practicalInfo', infoToDelete.id));
+      toast.success('Úspěšně smazáno!');
       setIsDeleteModalOpen(false);
       setInfoToDelete(null);
     } catch (err: any) {
       console.error("Delete error:", err);
-      alert(`Chyba při mazání: ${err.message || 'Neznámá chyba'}`);
+      toast.error(`Chyba při mazání: ${err.message || 'Neznámá chyba'}`);
     } finally {
       setIsDeleting(false);
     }
@@ -1760,8 +1821,7 @@ const PracticalInfoManager = () => {
             <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="bg-white w-full max-w-2xl rounded-[2.5rem] shadow-2xl p-10 max-h-[90vh] overflow-y-auto">
               <div className="flex justify-between items-center mb-10">
                 <div className="text-left">
-                  <h3 className="text-2xl font-black uppercase tracking-tighter text-slate-900">{editingInfo ? 'Upravit informaci' : 'Nové praktické info'}</h3>
-                  <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">Základní údaje pro návštěvníky</p>
+                  <h3 className="text-2xl font-black uppercase tracking-tighter text-slate-900">{editingInfo ? 'Upravit informaci' : 'Přidat info'}</h3>
                 </div>
                 <button onClick={() => setIsModalOpen(false)} className="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400 hover:bg-slate-100 transition-all"><X size={24} /></button>
               </div>
@@ -1769,16 +1829,16 @@ const PracticalInfoManager = () => {
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid grid-cols-1 gap-6">
                   <div className="space-y-2 text-left">
-                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Štítek</label>
-                    <input required value={formData.label} onChange={e => setFormData({...formData, label: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all" placeholder="Vstupné" />
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Štítek <span className="text-brand-red">*</span></label>
+                    <input required value={formData.label} onChange={e => setFormData({...formData, label: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all" />
                   </div>
                   <div className="space-y-2 text-left">
-                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Hlavní text</label>
-                    <input required value={formData.text} onChange={e => setFormData({...formData, text: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all" placeholder="Vstup je pro všechny zdarma" />
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Hlavní text <span className="text-brand-red">*</span></label>
+                    <input required value={formData.text} onChange={e => setFormData({...formData, text: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all" />
                   </div>
                   <div className="space-y-2 text-left">
-                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Doplňující text</label>
-                    <input required value={formData.sub} onChange={e => setFormData({...formData, sub: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all" placeholder="Doporučujeme přijít dříve" />
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Doplňující text <span className="text-brand-red">*</span></label>
+                    <input required value={formData.sub} onChange={e => setFormData({...formData, sub: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all" />
                   </div>
                 </div>
                 <div className="pt-4 flex gap-4">
@@ -1826,11 +1886,11 @@ const PracticalInfoManager = () => {
               <form onSubmit={handleHeaderSubmit} className="space-y-6">
                 <div className="space-y-4">
                   <div className="space-y-2 text-left">
-                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Horní titulek</label>
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Horní titulek <span className="text-brand-red">*</span></label>
                     <input required value={headerFormData.topTitle} onChange={e => setHeaderFormData({...headerFormData, topTitle: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all" />
                   </div>
                   <div className="space-y-2 text-left">
-                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Popis</label>
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Popis <span className="text-brand-red">*</span></label>
                     <textarea required rows={3} value={headerFormData.description} onChange={e => setHeaderFormData({...headerFormData, description: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none resize-none transition-all" />
                   </div>
                 </div>
@@ -1908,10 +1968,11 @@ const TalkshowManager = () => {
         subtitle: headerFormData.subtitle,
         updatedAt: serverTimestamp()
       });
+      toast.success('Záhlaví bylo úspěšně upraveno!');
       setIsHeaderModalOpen(false);
     } catch (err: any) {
       console.error("Error saving header:", err);
-      alert("Chyba při ukládání záhlaví");
+      toast.error("Chyba při ukládání záhlaví");
     } finally {
       setIsHeaderSubmitting(false);
     }
@@ -1997,10 +2058,11 @@ const TalkshowManager = () => {
           createdAt: serverTimestamp()
         });
       }
+      toast.success(editingTalkshow ? 'Úspěšně upraveno!' : 'Úspěšně vytvořeno!');
       setIsModalOpen(false);
     } catch (err: any) {
       console.error("Error saving to Firestore:", err);
-      alert(`Chyba při ukládání: ${err.message}`);
+      toast.error(`Chyba při ukládání: ${err.message}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -2016,11 +2078,12 @@ const TalkshowManager = () => {
     setIsDeleting(true);
     try {
       await deleteDoc(doc(db, 'talkshows', talkshowToDelete.id));
+      toast.success('Úspěšně smazáno!');
       setIsDeleteModalOpen(false);
       setTalkshowToDelete(null);
     } catch (err: any) {
       console.error("Delete error:", err);
-      alert(`Chyba při mazání: ${err.message}`);
+      toast.error(`Chyba při mazání: ${err.message}`);
     } finally {
       setIsDeleting(false);
     }
@@ -2097,44 +2160,57 @@ const TalkshowManager = () => {
                             </div>
                           
                             {/* Hosté a moderátor */}
-                            <div className="flex flex-col md:flex-row justify-between items-start gap-12 text-white pb-8 border-b border-white/10 mb-8">
-                              {/* Hosté */}
-                              <div className="flex-1 space-y-6 w-full">
-                                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/40">{item.guestsTitle}</p>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-y-8 gap-x-12">
-                                  {item.guests?.map((guest, gi) => (
-                                    <div key={gi} className="group">
-                                      <p className="text-xl font-bold tracking-tight text-white">{guest.name}</p>
-                                      {guest.role && <p className="text-sm text-white/50 font-medium">{guest.role}</p>}
+                            {(item.guestsTitle || item.guests?.some(g => g.name || g.role) || item.moderatorName || item.moderatorRole) && (
+                              <div className="flex flex-col md:flex-row justify-between items-start gap-12 text-white pb-8 border-b border-white/10 mb-8">
+                                {/* Hosté */}
+                                {(item.guestsTitle || item.guests?.some(g => g.name || g.role)) && (
+                                  <div className="flex-1 space-y-6 w-full">
+                                    {item.guestsTitle && <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/40">{item.guestsTitle}</p>}
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-y-8 gap-x-12">
+                                      {item.guests?.map((guest, gi) => (
+                                        (guest.name || guest.role) && (
+                                          <div key={gi} className="group">
+                                            {guest.name && <p className="text-xl font-bold tracking-tight text-white">{guest.name}</p>}
+                                            {guest.role && <p className="text-sm text-white/50 font-medium">{guest.role}</p>}
+                                          </div>
+                                        )
+                                      ))}
                                     </div>
-                                  ))}
-                                </div>
-                              </div>
-
-                              {/* Moderátor Box */}
-                              <div className="w-full md:w-auto shrink-0">
-                                <div className="bg-white/10 rounded-3xl p-6 pr-16 border border-white/10 relative min-w-[280px]">
-                                  <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/40 mb-3">Moderuje</p>
-                                  <p className="text-xl font-bold tracking-tight text-white mb-0.5">{item.moderatorName}</p>
-                                  {item.moderatorRole && <p className="text-sm text-white/50 font-medium">{item.moderatorRole}</p>}
-                                  <div className="absolute right-6 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/5 rounded-full flex items-center justify-center text-white/20">
-                                    <Users size={24} />
                                   </div>
-                                </div>
+                                )}
+
+                                {/* Moderátor Box */}
+                                {(item.moderatorName || item.moderatorRole) && (
+                                  <div className="w-full md:w-auto shrink-0">
+                                    <div className="bg-white/10 rounded-3xl p-6 pr-16 border border-white/10 relative min-w-[280px]">
+                                      <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/40 mb-3">Moderuje</p>
+                                      {item.moderatorName && <p className="text-xl font-bold tracking-tight text-white mb-0.5">{item.moderatorName}</p>}
+                                      {item.moderatorRole && <p className="text-sm text-white/50 font-medium">{item.moderatorRole}</p>}
+                                      <div className="absolute right-6 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/5 rounded-full flex items-center justify-center text-white/20">
+                                        <Users size={24} />
+                                      </div>
+                                    </div>
+                                  </div>
+                                )}
                               </div>
-                            </div>
+                            )}
 
                             {/* Závěrečné slovo */}
-                            {item.closingWordName && (
-                              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6 text-white pt-2">
-                                <div className="flex items-center gap-4">
-                                  <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center text-white text-xs font-black tracking-widest shrink-0 shadow-lg">
+                            {(item.closingWordName || item.closingWordRole) && (
+                              <div className="flex items-start gap-4 text-white pt-2">
+                                {item.closingWordName && (
+                                  <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center text-white text-xs font-black tracking-widest shrink-0 shadow-lg mt-1">
                                     {item.closingWordName.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2)}
                                   </div>
-                                  <div className="text-left">
-                                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/40 mb-1 leading-none">Závěrečné slovo</p>
-                                    <p className="text-xl font-bold tracking-tight text-white leading-none">{item.closingWordName}</p>
-                                  </div>
+                                )}
+                                <div className="text-left">
+                                  <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/40 mb-3 leading-none">Závěrečné slovo</p>
+                                  {item.closingWordName && <p className="text-xl font-bold tracking-tight text-white mb-0.5">{item.closingWordName}</p>}
+                                  {item.closingWordRole && (
+                                    <p className="text-sm text-white/50 font-medium">
+                                      {item.closingWordRole}
+                                    </p>
+                                  )}
                                 </div>
                               </div>
                             )}
@@ -2183,8 +2259,7 @@ const TalkshowManager = () => {
             <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="bg-white w-full max-w-2xl rounded-[2.5rem] shadow-2xl p-10 max-h-[90vh] overflow-y-auto">
               <div className="flex justify-between items-center mb-10 text-left">
                 <div className="text-left">
-                  <h3 className="text-2xl font-black uppercase tracking-tighter text-slate-900">{editingTalkshow ? 'Upravit talkshow' : 'Nová talkshow'}</h3>
-                  <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">Diskuse a hosté programu</p>
+                  <h3 className="text-2xl font-black uppercase tracking-tighter text-slate-900">{editingTalkshow ? 'Upravit talkshow' : 'Přidat talkshow'}</h3>
                 </div>
                 <button onClick={() => setIsModalOpen(false)} className="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400 hover:bg-slate-100 transition-all"><X size={24} /></button>
               </div>
@@ -2192,28 +2267,48 @@ const TalkshowManager = () => {
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-left">
                   <div className="md:col-span-2 space-y-2">
-                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Název talkshow / téma</label>
-                    <input required value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all" placeholder="Nástroje naděje" />
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Název talkshow / téma <span className="text-brand-red">*</span></label>
+                    <input required value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all" />
                   </div>
 
                   <div className="md:col-span-2 space-y-2">
-                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Krátký popis</label>
-                    <textarea required rows={3} value={formData.desc} onChange={e => setFormData({...formData, desc: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none resize-none transition-all" placeholder="O čem talkshow bude..." />
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Krátký popis <span className="text-brand-red">*</span></label>
+                    <textarea required rows={3} value={formData.desc} onChange={e => setFormData({...formData, desc: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none resize-none transition-all" />
                   </div>
 
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Jméno moderátora</label>
-                    <input required value={formData.moderatorName} onChange={e => setFormData({...formData, moderatorName: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all" placeholder="Kateřina Hodecová" />
+                  {/* Moderátor Block */}
+                  <div className="bg-white border border-slate-200 rounded-2xl p-5 space-y-4 shadow-sm">
+                    <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2 flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-brand-teal" /> Moderátor
+                    </h4>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Jméno</label>
+                      <input value={formData.moderatorName} onChange={e => setFormData({...formData, moderatorName: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all text-sm" />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Role / Popis</label>
+                      <input value={formData.moderatorRole} onChange={e => setFormData({...formData, moderatorRole: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all text-sm" />
+                    </div>
                   </div>
 
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Role moderátora</label>
-                    <input value={formData.moderatorRole} onChange={e => setFormData({...formData, moderatorRole: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all" placeholder="redaktorka Rádio 7" />
+                  {/* Závěrečné slovo Block */}
+                  <div className="bg-white border border-slate-200 rounded-2xl p-5 space-y-4 shadow-sm">
+                    <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2 flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-brand-yellow" /> Závěrečné slovo
+                    </h4>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Jméno</label>
+                      <input value={formData.closingWordName} onChange={e => setFormData({...formData, closingWordName: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all text-sm" />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Role / Popis</label>
+                      <input value={formData.closingWordRole} onChange={e => setFormData({...formData, closingWordRole: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all text-sm" />
+                    </div>
                   </div>
 
                   <div className="md:col-span-2 space-y-2">
                     <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Titulek hostů</label>
-                    <input required value={formData.guestsTitle} onChange={e => setFormData({...formData, guestsTitle: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all" placeholder="Hosté Kateřiny Hodecové" />
+                    <input value={formData.guestsTitle} onChange={e => setFormData({...formData, guestsTitle: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all" />
                   </div>
 
                   <div className="md:col-span-2 space-y-4">
@@ -2228,8 +2323,14 @@ const TalkshowManager = () => {
                       {formData.guests.map((guest, index) => (
                         <div key={index} className="flex gap-3 items-start p-4 bg-slate-50 rounded-2xl border border-slate-100">
                           <div className="flex-1 space-y-2">
-                            <input required value={guest.name} onChange={e => handleGuestChange(index, 'name', e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2 text-slate-900 text-sm outline-none focus:border-brand-teal transition-all" placeholder="Jméno hosta" />
-                            <input value={guest.role} onChange={e => handleGuestChange(index, 'role', e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2 text-slate-500 text-xs outline-none focus:border-brand-teal transition-all" placeholder="Role" />
+                            <div className="space-y-1">
+                              <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Jméno hosta <span className="text-brand-red">*</span></label>
+                              <input required value={guest.name} onChange={e => handleGuestChange(index, 'name', e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2 text-slate-900 text-sm outline-none focus:border-brand-teal transition-all" />
+                            </div>
+                            <div className="space-y-1">
+                              <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Role hosta</label>
+                              <input value={guest.role} onChange={e => handleGuestChange(index, 'role', e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2 text-slate-500 text-xs outline-none focus:border-brand-teal transition-all" />
+                            </div>
                           </div>
                           <button type="button" onClick={() => handleRemoveGuest(index)} className="p-2 text-slate-300 hover:text-brand-red transition-colors">
                             <Trash2 size={16} />
@@ -2337,10 +2438,11 @@ const FamilyProgramManager = () => {
         subtitle: headerFormData.subtitle,
         updatedAt: serverTimestamp()
       });
+      toast.success('Záhlaví bylo úspěšně upraveno!');
       setIsHeaderModalOpen(false);
     } catch (err: any) {
       console.error("Error saving header:", err);
-      alert("Chyba při ukládání záhlaví");
+      toast.error("Chyba při ukládání záhlaví");
     } finally {
       setIsHeaderSubmitting(false);
     }
@@ -2413,10 +2515,11 @@ const FamilyProgramManager = () => {
           createdAt: serverTimestamp()
         });
       }
+      toast.success(editingItem ? 'Úspěšně upraveno!' : 'Úspěšně vytvořeno!');
       setIsModalOpen(false);
     } catch (err) {
       console.error(err);
-      alert('Chyba při ukládání');
+      toast.error('Chyba při ukládání');
     } finally {
       setIsSubmitting(false);
     }
@@ -2432,11 +2535,12 @@ const FamilyProgramManager = () => {
     setIsDeleting(true);
     try {
       await deleteDoc(doc(db, 'familyProgram', itemToDelete.id));
+      toast.success('Úspěšně smazáno!');
       setIsDeleteModalOpen(false);
       setItemToDelete(null);
     } catch (err) {
       console.error(err);
-      alert('Chyba při mazání');
+      toast.error('Chyba při mazání');
     } finally {
       setIsDeleting(false);
     }
@@ -2594,28 +2698,28 @@ const FamilyProgramManager = () => {
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-left">
                   <div className="md:col-span-2 space-y-2">
-                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Hlavní titulek</label>
-                    <input required value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all" placeholder="MÍSTO PRO RODINY" />
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Hlavní titulek <span className="text-brand-red">*</span></label>
+                    <input required value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all" />
                   </div>
 
                   <div className="md:col-span-2 space-y-2">
-                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Tag / Štítek</label>
-                    <input required value={formData.tag} onChange={e => setFormData({...formData, tag: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all" placeholder="Dětský svět" />
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Tag / Štítek <span className="text-brand-red">*</span></label>
+                    <input required value={formData.tag} onChange={e => setFormData({...formData, tag: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all" />
                   </div>
 
                   <div className="md:col-span-2 space-y-2">
-                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Popisek</label>
-                    <textarea required rows={2} value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-4 text-slate-900 focus:border-brand-teal outline-none resize-none transition-all" placeholder="Krátký popis sekce..." />
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Popisek <span className="text-brand-red">*</span></label>
+                    <textarea required rows={2} value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-4 text-slate-900 focus:border-brand-teal outline-none resize-none transition-all" />
                   </div>
 
                   <div className="md:col-span-2 space-y-2">
                     <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Hlavní bod programu</label>
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                       <div className="md:col-span-3">
-                        <input value={formData.mainPoint} onChange={e => setFormData({...formData, mainPoint: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all" placeholder="Název" />
+                        <input value={formData.mainPoint} onChange={e => setFormData({...formData, mainPoint: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all" />
                       </div>
                       <div className="md:col-span-1">
-                        <input value={formData.mainPointTime} onChange={e => setFormData({...formData, mainPointTime: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all" placeholder="15:00" />
+                        <input value={formData.mainPointTime} onChange={e => setFormData({...formData, mainPointTime: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all" />
                       </div>
                     </div>
                   </div>
@@ -2631,10 +2735,9 @@ const FamilyProgramManager = () => {
                     <div className="space-y-3">
                       {formData.activities.map((activity, index) => (
                         <div key={index} className="flex gap-3 items-center p-4 bg-slate-50 rounded-2xl border border-slate-100 relative">
-                           <div className="relative">
                             <button 
                               type="button"
-                              onClick={() => setActiveIconIndex(activeIconIndex === index ? null : index)}
+                              onClick={() => setActiveIconIndex(index)}
                               className="w-12 h-12 rounded-xl bg-white border border-slate-200 text-slate-600 flex items-center justify-center shrink-0 hover:bg-white hover:text-brand-teal transition-all shadow-sm"
                             >
                                {(() => {
@@ -2643,23 +2746,10 @@ const FamilyProgramManager = () => {
                                })()}
                             </button>
 
-                            <AnimatePresence>
-                              {activeIconIndex === index && (
-                                <>
-                                  <div className="fixed inset-0 z-40" onClick={() => setActiveIconIndex(null)} />
-                                  <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="absolute left-0 top-14 z-50 bg-white border border-slate-200 p-3 rounded-2xl shadow-2xl grid grid-cols-5 gap-2 w-max">
-                                    {FAMILY_ICONS.map((iconOption) => (
-                                      <button key={iconOption.id} type="button" onClick={() => { handleActivityChange(index, 'icon', iconOption.id); setActiveIconIndex(null); }} className={`p-2 rounded-lg transition-all ${activity.icon === iconOption.id ? 'bg-brand-teal text-black shadow-lg' : 'bg-slate-50 text-slate-400 hover:bg-slate-100 hover:text-slate-600'}`}>
-                                        <iconOption.icon size={20} />
-                                      </button>
-                                    ))}
-                                  </motion.div>
-                                </>
-                              )}
-                            </AnimatePresence>
+                          <div className="flex-1 space-y-1">
+                            <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Název aktivity <span className="text-brand-red">*</span></label>
+                            <input required value={activity.name} onChange={e => handleActivityChange(index, 'name', e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-slate-900 text-sm outline-none focus:border-brand-teal transition-all" />
                           </div>
-
-                          <input required value={activity.name} onChange={e => handleActivityChange(index, 'name', e.target.value)} className="flex-1 bg-white border border-slate-200 rounded-xl px-4 py-3 text-slate-900 text-sm outline-none focus:border-brand-teal transition-all" placeholder="Název aktivity" />
                           <button type="button" onClick={() => handleRemoveActivity(index)} className="p-3 text-slate-300 hover:text-brand-red transition-colors">
                             <Trash2 size={18} />
                           </button>
@@ -2674,6 +2764,52 @@ const FamilyProgramManager = () => {
                   <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 py-4 bg-slate-50 text-slate-400 rounded-xl font-black uppercase tracking-widest hover:bg-slate-100 transition-all">Zrušit</button>
                 </div>
               </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Icon Selection Modal for Activities */}
+      <AnimatePresence>
+        {activeIconIndex !== null && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-6 bg-black/80 backdrop-blur-sm">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9 }} 
+              animate={{ opacity: 1, scale: 1 }} 
+              exit={{ opacity: 0, scale: 0.9 }} 
+              className="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl p-10 font-sans"
+            >
+              <div className="flex justify-between items-center mb-8 text-left">
+                <div className="text-left">
+                  <h3 className="text-2xl font-black uppercase tracking-tighter text-slate-900">Vybrat ikonu</h3>
+                  <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">Zvolte symbol pro aktivitu</p>
+                </div>
+                <button type="button" onClick={() => setActiveIconIndex(null)} className="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400 hover:bg-slate-100 transition-all group"><X size={24} className="group-hover:rotate-90 transition-transform duration-300" /></button>
+              </div>
+
+              <div className="grid grid-cols-4 gap-3 overflow-y-auto max-h-[50vh] pr-2 custom-scrollbar">
+                {FAMILY_ICONS.map((item) => {
+                  const isSelected = formData.activities[activeIconIndex]?.icon === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => {
+                        handleActivityChange(activeIconIndex, 'icon', item.id);
+                        setActiveIconIndex(null);
+                      }}
+                      className={`p-6 rounded-2xl border transition-all flex flex-col items-center gap-3 group/icon ${
+                        isSelected
+                          ? 'bg-brand-teal/10 border-brand-teal text-brand-teal shadow-inner ring-4 ring-brand-teal/5' 
+                          : 'bg-slate-50 border-slate-100 text-slate-400 hover:border-slate-300 hover:bg-white hover:shadow-md'
+                      }`}
+                    >
+                      <item.icon size={32} className={`transition-transform duration-300 ${isSelected ? 'scale-110' : 'group-hover/icon:scale-110'}`} />
+                      <span className="text-[8px] font-black uppercase tracking-widest opacity-60 flex-shrink-0 whitespace-nowrap overflow-hidden max-w-full text-ellipsis">{item.id}</span>
+                    </button>
+                  );
+                })}
+              </div>
             </motion.div>
           </div>
         )}
@@ -2712,8 +2848,8 @@ const FamilyProgramManager = () => {
 
               <form onSubmit={handleHeaderSubmit} className="space-y-6">
                 <div className="space-y-2 text-left">
-                  <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Podnadpis (v náhledu)</label>
-                  <input required value={headerFormData.subtitle} onChange={e => setHeaderFormData({...headerFormData, subtitle: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all" placeholder="Program pro děti a rodiny" />
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Podnadpis <span className="text-brand-red">*</span></label>
+                  <input required value={headerFormData.subtitle} onChange={e => setHeaderFormData({...headerFormData, subtitle: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all" />
                 </div>
                 <div className="pt-4 flex gap-4">
                   <button type="submit" disabled={isHeaderSubmitting} className="flex-1 py-4 bg-brand-teal text-black rounded-xl font-black uppercase tracking-widest shadow-lg hover:bg-brand-teal-light transition-all disabled:opacity-50">{isHeaderSubmitting ? 'Ukládám...' : 'Uložit záhlaví'}</button>
@@ -2781,10 +2917,11 @@ const CommunityManager: React.FC = () => {
         subtitle: headerFormData.subtitle,
         updatedAt: serverTimestamp()
       });
+      toast.success('Záhlaví bylo úspěšně upraveno!');
       setIsHeaderModalOpen(false);
     } catch (err: any) {
       console.error("Error saving header:", err);
-      alert("Chyba při ukládání záhlaví");
+      toast.error("Chyba při ukládání záhlaví");
     } finally {
       setIsHeaderSubmitting(false);
     }
@@ -2801,8 +2938,8 @@ const CommunityManager: React.FC = () => {
         const hasItems = section.items && section.items.length > 0;
         const hasTag = !!section.tag;
         
-        if (hasItems && !hasTag) inferredTitle = 'Organizace';
-        else if (hasTag || d.includes('klidu') || d.includes('ztišení')) inferredTitle = 'Zóna klidu';
+        if (hasItems && !hasTag) inferredTitle = 'Velká sekce';
+        else if (hasTag || d.includes('klidu') || d.includes('ztišení')) inferredTitle = 'Malá sekce';
       }
 
       setFormData({
@@ -2853,29 +2990,23 @@ const CommunityManager: React.FC = () => {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      const isQuietZone = formData.title === 'Zóna klidu';
+      const isSmallSection = formData.title === 'Zóna klidu' || formData.title === 'Malá sekce' || formData.title === 'Malá';
       const cleanData = {
         title: formData.title,
         name: formData.name,
         description: formData.description,
-        tag: isQuietZone ? formData.tag : '',
-        items: isQuietZone ? [] : formData.items.map(item => ({ name: item.name, description: item.description })),
+        tag: isSmallSection ? formData.tag : '',
+        items: isSmallSection ? [] : formData.items.map(item => ({ name: item.name, description: item.description })),
         order: Number(formData.order),
-        icon: formData.title === 'Zóna klidu' ? 'Pause' : 'Heart',
+        icon: formData.icon,
         updatedAt: serverTimestamp()
       };
-      if (editingSection) {
-        await updateDoc(doc(db, 'communitySections', editingSection.id), cleanData);
-      } else {
-        await addDoc(collection(db, 'communitySections'), {
-          ...cleanData,
-          createdAt: serverTimestamp()
-        });
-      }
+      
+      toast.success(editingSection ? 'Úspěšně upraveno!' : 'Úspěšně vytvořeno!');
       setIsModalOpen(false);
     } catch (err) { 
       console.error(err); 
-      alert('Chyba při ukládání');
+      toast.error('Chyba při ukládání');
     } finally { setIsSubmitting(false); }
   };
 
@@ -2889,11 +3020,12 @@ const CommunityManager: React.FC = () => {
     setIsDeleting(true);
     try {
       await deleteDoc(doc(db, 'communitySections', itemToDelete.id));
+      toast.success('Úspěšně smazáno!');
       setIsDeleteModalOpen(false);
       setItemToDelete(null);
     } catch (err) { 
       console.error(err); 
-      alert('Chyba při mazání');
+      toast.error('Chyba při mazání');
     } finally { setIsDeleting(false); }
   };
 
@@ -2949,7 +3081,7 @@ const CommunityManager: React.FC = () => {
                 <h5 className="text-2xl font-bold tracking-tight relative z-10 text-black">{headerData.subtitle}</h5>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-6 relative z-10">
                 {sections.length === 0 ? (
                   <div className="col-span-full py-20 text-center border-2 border-dashed border-slate-100 rounded-3xl text-slate-200 font-bold uppercase tracking-[0.3em] text-[10px]">
                     Zde se zobrazí náhled komunitních sekcí
@@ -2957,13 +3089,13 @@ const CommunityManager: React.FC = () => {
                 ) : (
                   <>
                     {/* Left Block: Velká sekce */}
-                    <div className="md:col-span-8 bg-[#42A1A1] rounded-[40px] p-8 md:p-10 shadow-2xl overflow-hidden relative border border-white/10 text-left h-full flex flex-col min-h-[400px]">
+                    <div className="md:col-span-8 bg-[#42A1A1] rounded-[40px] p-8 md:p-10 shadow-2xl overflow-hidden relative border border-white/10 text-left h-full">
                       <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -mr-32 -mt-32 pointer-events-none" />
-                      <div className="space-y-8 relative z-10 flex-grow">
+                      <div className="space-y-8 relative z-10 h-full flex flex-col">
                         {sections.filter(s => s.title === 'Velká sekce' || s.title === 'Velká' || s.title === 'Organizace').map((section) => {
                           const IconComponent = (section.icon && (COMMUNITY_ICONS.find(i => i.id === section.icon)?.icon)) || Heart;
                           return (
-                            <div key={section.id} className="space-y-8">
+                            <div key={section.id} className="space-y-8 group flex-grow">
                               <div className="flex items-start gap-5">
                                 <div className="p-3 bg-white/10 rounded-2xl text-white shadow-inner flex-shrink-0">
                                   <IconComponent size={28} />
@@ -2992,21 +3124,23 @@ const CommunityManager: React.FC = () => {
                           );
                         })}
                         {sections.filter(s => s.title === 'Velká sekce' || s.title === 'Velká' || s.title === 'Organizace').length === 0 && (
-                          <div className="flex-grow flex items-center justify-center opacity-30 h-full border-2 border-dashed border-white/10 rounded-3xl py-12">
-                            <p className="text-xs font-bold uppercase tracking-widest text-white">Velká sekce se připravuje</p>
+                          <div className="flex-grow flex items-center justify-center">
+                            <div className="py-12 px-6 text-center border-2 border-dashed border-white/10 rounded-3xl opacity-30 w-full">
+                              <p className="text-xs font-bold uppercase tracking-widest text-white">Velká sekce se připravuje</p>
+                            </div>
                           </div>
                         )}
                       </div>
                     </div>
 
                     {/* Right Block: Malá sekce */}
-                    <div className="md:col-span-4 bg-[#3E9292] rounded-[40px] p-8 md:p-10 shadow-2xl overflow-hidden relative border border-white/10 text-left h-full flex flex-col min-h-[400px]">
+                    <div className="md:col-span-4 bg-[#3E9292] rounded-[40px] p-8 md:p-10 shadow-2xl overflow-hidden relative border border-white/10 text-left h-full">
                       <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -mr-32 -mt-32 pointer-events-none" />
-                      <div className="space-y-8 relative z-10 flex-grow h-full flex flex-col">
+                      <div className="space-y-8 relative z-10 h-full flex flex-col">
                         {sections.filter(s => s.title === 'Malá sekce' || s.title === 'Malá' || s.title === 'Zóna klidu').map((section) => {
                           const IconComponent = (section.icon && (COMMUNITY_ICONS.find(i => i.id === section.icon)?.icon)) || Pause;
                           return (
-                            <div key={section.id} className="space-y-8 flex flex-col h-full flex-grow">
+                            <div key={section.id} className="space-y-8 group flex-grow h-full flex flex-col">
                               <div className="flex items-center gap-4">
                                 <div className="p-3 bg-white/10 rounded-xl text-white shadow-inner">
                                   <IconComponent size={24} />
@@ -3031,8 +3165,10 @@ const CommunityManager: React.FC = () => {
                           );
                         })}
                         {sections.filter(s => s.title === 'Malá sekce' || s.title === 'Malá' || s.title === 'Zóna klidu').length === 0 && (
-                          <div className="flex-grow flex items-center justify-center opacity-30 h-full border-2 border-dashed border-white/10 rounded-3xl py-12">
-                            <p className="text-xs font-bold uppercase tracking-widest text-white">Malá sekce se připravuje</p>
+                          <div className="flex-grow flex items-center justify-center">
+                            <div className="py-12 px-6 text-center border-2 border-dashed border-white/10 rounded-3xl opacity-30 w-full">
+                              <p className="text-xs font-bold uppercase tracking-widest text-white">Malá sekce se připravuje</p>
+                            </div>
                           </div>
                         )}
                       </div>
@@ -3044,9 +3180,9 @@ const CommunityManager: React.FC = () => {
           </div>
 
           {/* Management List */}
-          <div className="p-6 bg-slate-50 space-y-3">
+          <div className="p-6 bg-slate-50 grid grid-cols-1 md:grid-cols-2 gap-4">
             {sections.map((section) => (
-              <div key={section.id} className="bg-white p-4 pr-6 rounded-2xl border border-slate-200 flex items-center justify-between group shadow-sm transition-all hover:border-brand-teal/50">
+              <div key={section.id} className="bg-white p-4 rounded-2xl border border-slate-200 flex items-center justify-between group shadow-sm transition-all hover:border-brand-teal/50">
                 <div className="flex items-center gap-5 min-w-0 text-left">
                   <div className="w-12 h-12 rounded-xl flex items-center justify-center transition-all flex-shrink-0 bg-slate-100 text-slate-400 group-hover:bg-brand-teal/10 group-hover:text-brand-teal">
                     {(() => {
@@ -3087,14 +3223,14 @@ const CommunityManager: React.FC = () => {
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-left">
                   <div className="md:col-span-2 space-y-2">
-                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1 font-black">Typ sekce</label>
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1 font-black">Typ sekce <span className="text-brand-red">*</span></label>
                     <input required value={formData.title} onChange={e => {
                       const newTitle = e.target.value;
                       setFormData({
                         ...formData, 
                         title: newTitle
                       });
-                    }} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all font-black uppercase" placeholder="Velká sekce / Malá sekce" />
+                    }} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all font-black uppercase" />
                   </div>
 
                   <div className="md:col-span-2 space-y-3">
@@ -3107,7 +3243,7 @@ const CommunityManager: React.FC = () => {
                       <div className="w-12 h-12 rounded-xl bg-white border border-slate-100 flex items-center justify-center text-brand-teal shadow-sm group-hover:shadow-md transition-all">
                         {(() => {
                           const IconData = COMMUNITY_ICONS.find(i => i.id === formData.icon);
-                          const Icon = IconData ? IconData.icon : (formData.title === 'Zóna klidu' ? Pause : Heart);
+                          const Icon = IconData ? IconData.icon : ((formData.title === 'Zóna klidu' || formData.title === 'Malá sekce') ? Pause : Heart);
                           return <Icon size={24} />;
                         })()}
                       </div>
@@ -3122,24 +3258,24 @@ const CommunityManager: React.FC = () => {
                   </div>
 
                   <div className="md:col-span-2 space-y-2">
-                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Název sekce</label>
-                    <input required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all font-medium" placeholder="Prezentace organizací" />
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Název sekce <span className="text-brand-red">*</span></label>
+                    <input required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all font-medium" />
                   </div>
 
                   <div className="md:col-span-2 space-y-2">
-                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Popis</label>
-                    <textarea required rows={3} value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-4 text-slate-900 focus:border-brand-teal outline-none resize-none transition-all" placeholder="Krátký popis sekce..." />
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Popis <span className="text-brand-red">*</span></label>
+                    <textarea required rows={3} value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-4 text-slate-900 focus:border-brand-teal outline-none resize-none transition-all" />
                   </div>
 
                   { (formData.title === 'Malá sekce' || formData.title === 'Malá' || formData.title === 'Zóna klidu') ? (
                     <div className="md:col-span-2 space-y-2">
-                      <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Tag (podpis zóny)</label>
-                      <input required value={formData.tag} onChange={e => setFormData({...formData, tag: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all" placeholder="Tým pro naslouchání připraven" />
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Tag <span className="text-brand-red">*</span></label>
+                      <input required value={formData.tag} onChange={e => setFormData({...formData, tag: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all" />
                     </div>
                   ) : (
                     <div className="md:col-span-2 space-y-4">
                       <div className="flex items-center justify-between">
-                        <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Seznam položek (organizací)</label>
+                        <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Seznam položek</label>
                         <button type="button" onClick={handleAddItem} className="flex items-center gap-1 px-3 py-1 bg-slate-50 hover:bg-slate-100 rounded-lg text-brand-teal text-[10px] font-black uppercase tracking-widest transition-all">
                           <Plus size={12} /> Přidat položku
                         </button>
@@ -3149,9 +3285,15 @@ const CommunityManager: React.FC = () => {
                         {formData.items.map((item, index) => (
                           <div key={index} className="p-4 bg-slate-50 rounded-2xl border border-slate-100 relative group">
                             <button type="button" onClick={() => handleRemoveItem(index)} className="absolute top-4 right-4 p-2 text-slate-300 hover:text-brand-red transition-colors opacity-0 group-hover:opacity-100"><Trash2 size={16} /></button>
-                            <div className="grid gap-3">
-                              <input required value={item.name} onChange={e => handleItemChange(index, 'name', e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2 text-sm text-slate-900 outline-none focus:border-brand-teal" placeholder="Název organizace" />
-                              <input required value={item.description} onChange={e => handleItemChange(index, 'description', e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2 text-xs text-slate-500 outline-none focus:border-brand-teal" placeholder="Popis činnosti" />
+                            <div className="grid gap-3 mt-2 md:mt-0 md:pr-8">
+                              <div className="space-y-1 text-left">
+                                <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Název <span className="text-brand-red">*</span></label>
+                                <input required value={item.name} onChange={e => handleItemChange(index, 'name', e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2 text-sm text-slate-900 outline-none focus:border-brand-teal" />
+                              </div>
+                              <div className="space-y-1 text-left">
+                                <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Popis <span className="text-brand-red">*</span></label>
+                                <input required value={item.description} onChange={e => handleItemChange(index, 'description', e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2 text-xs text-slate-500 outline-none focus:border-brand-teal" />
+                              </div>
                             </div>
                           </div>
                         ))}
@@ -3165,6 +3307,53 @@ const CommunityManager: React.FC = () => {
                   <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 py-4 bg-slate-50 text-slate-400 rounded-xl font-black uppercase tracking-widest hover:bg-slate-100 transition-all">Zrušit</button>
                 </div>
               </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Icon Selection Modal */}
+      <AnimatePresence>
+        {isIconModalOpen && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-6 bg-black/80 backdrop-blur-sm">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9 }} 
+              animate={{ opacity: 1, scale: 1 }} 
+              exit={{ opacity: 0, scale: 0.9 }} 
+              className="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl p-10 font-sans"
+            >
+              <div className="flex justify-between items-center mb-8 text-left">
+                <div className="text-left">
+                  <h3 className="text-2xl font-black uppercase tracking-tighter text-slate-900">Vybrat ikonu</h3>
+                  <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">Zvolte symbol pro sekci</p>
+                </div>
+                <button type="button" onClick={() => setIsIconModalOpen(false)} className="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400 hover:bg-slate-100 transition-all group"><X size={24} className="group-hover:rotate-90 transition-transform duration-300" /></button>
+              </div>
+
+              <div className="grid grid-cols-4 gap-3 overflow-y-auto max-h-[50vh] pr-2 custom-scrollbar">
+                {COMMUNITY_ICONS.map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => {
+                      setFormData({ ...formData, icon: item.id });
+                      setIsIconModalOpen(false);
+                    }}
+                    className={`p-6 rounded-2xl border transition-all flex flex-col items-center gap-3 group/icon ${
+                      formData.icon === item.id 
+                        ? 'bg-brand-teal/10 border-brand-teal text-brand-teal shadow-inner ring-4 ring-brand-teal/5' 
+                        : 'bg-slate-50 border-slate-100 text-slate-400 hover:border-slate-300 hover:bg-white hover:shadow-md'
+                    }`}
+                  >
+                    <item.icon size={32} className={`transition-transform duration-300 ${formData.icon === item.id ? 'scale-110' : 'group-hover/icon:scale-110'}`} />
+                    <span className="text-[8px] font-black uppercase tracking-widest opacity-60">{item.id}</span>
+                  </button>
+                ))}
+              </div>
+
+              <div className="mt-8 pt-8 border-t border-slate-100 italic text-[10px] text-slate-400 text-center uppercase tracking-[0.2em]">
+                Vybraná ikona se okamžitě projeví ve formuláři
+              </div>
             </motion.div>
           </div>
         )}
@@ -3203,8 +3392,8 @@ const CommunityManager: React.FC = () => {
 
               <form onSubmit={handleHeaderSubmit} className="space-y-6">
                 <div className="space-y-2 text-left">
-                  <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Podnadpis (v náhledu)</label>
-                  <input required value={headerFormData.subtitle} onChange={e => setHeaderFormData({...headerFormData, subtitle: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all" placeholder="Prezentace organizací a zóna klidu" />
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Podnadpis <span className="text-brand-red">*</span></label>
+                  <input required value={headerFormData.subtitle} onChange={e => setHeaderFormData({...headerFormData, subtitle: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all" />
                 </div>
                 <div className="pt-4 flex gap-4">
                   <button type="submit" disabled={isHeaderSubmitting} className="flex-1 py-4 bg-brand-teal text-black rounded-xl font-black uppercase tracking-widest shadow-lg hover:bg-brand-teal-light transition-all disabled:opacity-50">{isHeaderSubmitting ? 'Ukládám...' : 'Uložit záhlaví'}</button>
@@ -3265,15 +3454,12 @@ const AboutManager = () => {
     setIsSubmitting(true);
     try {
       const data = { ...formData, updatedAt: serverTimestamp() };
-      if (editingSection) {
-        await updateDoc(doc(db, 'aboutSections', editingSection.id), data);
-      } else {
-        await addDoc(collection(db, 'aboutSections'), { ...data, createdAt: serverTimestamp() });
-      }
+      
+      toast.success(editingSection ? 'Úspěšně upraveno!' : 'Úspěšně vytvořeno!');
       setIsModalOpen(false);
     } catch (err) {
       console.error(err);
-      alert("Chyba při ukládání");
+      toast.error("Chyba při ukládání");
     } finally {
       setIsSubmitting(false);
     }
@@ -3284,6 +3470,7 @@ const AboutManager = () => {
     setIsDeleting(true);
     try {
       await deleteDoc(doc(db, 'aboutSections', sectionToDelete.id));
+      toast.success('Úspěšně smazáno!');
       setIsDeleteModalOpen(false);
     } catch (err) {
       console.error(err);
@@ -3305,10 +3492,11 @@ const AboutManager = () => {
         subtitle: headerFormData.subtitle,
         updatedAt: serverTimestamp()
       }, { merge: true });
+      toast.success('Záhlaví bylo úspěšně upraveno!');
       setIsHeaderModalOpen(false);
     } catch (err: any) {
       console.error("Error saving about header:", err);
-      alert("Chyba při ukládání záhlaví: " + (err.message || "Neznámá chyba"));
+      toast.error("Chyba při ukládání záhlaví: " + (err.message || "Neznámá chyba"));
     } finally {
       setIsHeaderSubmitting(false);
     }
@@ -3368,8 +3556,8 @@ const AboutManager = () => {
                       }`}
                     >
                       <div className="flex items-center gap-3">
-                        <div className={`h-0.5 w-6 ${idx % 2 === 0 ? 'bg-brand-yellow' : 'bg-white'}`} />
-                        <div className={`text-[10px] font-black uppercase tracking-[0.3em] ${idx % 2 === 0 ? 'text-brand-yellow' : 'text-white'}`}>{s.tag}</div>
+                        <div className={`h-0.5 w-6 ${idx % 2 === 0 ? 'bg-brand-yellow' : 'bg-brand-teal'}`} />
+                        <div className={`text-[10px] font-black uppercase tracking-[0.3em] ${idx % 2 === 0 ? 'text-brand-yellow' : 'text-brand-teal'}`}>{s.tag}</div>
                       </div>
                       <div className="text-xl md:text-2xl font-sans font-bold leading-tight tracking-tighter whitespace-pre-wrap text-white">
                         {s.title}
@@ -3424,14 +3612,14 @@ const AboutManager = () => {
                 </div>
                 
                 <div className="space-y-2">
-                  <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Podnadpis sekce</label>
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Podnadpis sekce <span className="text-brand-red">*</span></label>
                   <input 
                     required 
                     type="text"
                     value={headerFormData.subtitle} 
                     onChange={e => setHeaderFormData({...headerFormData, subtitle: e.target.value})} 
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal focus:ring-1 focus:ring-brand-teal/20 outline-none transition-all" 
-                    placeholder="Příběh festivalu"
+                   
                   />
                 </div>
 
@@ -3451,8 +3639,7 @@ const AboutManager = () => {
             <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="bg-white w-full max-w-2xl rounded-[2.5rem] shadow-2xl p-10 max-h-[90vh] overflow-y-auto overflow-x-hidden">
               <div className="flex justify-between items-center mb-10">
                 <div className="text-left">
-                  <h3 className="text-2xl font-black uppercase tracking-tighter text-slate-900">{editingSection ? 'Upravit sekci' : 'Nová sekce o festivalu'}</h3>
-                  <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">Vyplňte příběh festivalu</p>
+                  <h3 className="text-2xl font-black uppercase tracking-tighter text-slate-900">{editingSection ? 'Upravit sekci' : 'Přidat sekci'}</h3>
                 </div>
                 <button onClick={() => setIsModalOpen(false)} className="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400 hover:bg-slate-100 transition-all"><X size={24} /></button>
               </div>
@@ -3461,15 +3648,15 @@ const AboutManager = () => {
                 <div className="space-y-6">
                   <div className="space-y-2 text-left">
                     <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Tag</label>
-                    <input required value={formData.tag} onChange={e => setFormData({...formData, tag: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all" placeholder="Proč vznikl Den pro Brno" />
+                    <input value={formData.tag} onChange={e => setFormData({...formData, tag: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all" />
                   </div>
                   <div className="space-y-2 text-left">
-                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Nadpis</label>
-                    <input required value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all" placeholder="Věříme, že město není jen o budovách..." />
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Nadpis <span className="text-brand-red">*</span></label>
+                    <input required value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all" />
                   </div>
                   <div className="space-y-2 text-left">
                     <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Popis</label>
-                    <textarea required rows={5} value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none resize-none transition-all" placeholder="Den pro Brno vzniká z touhy spojovat..." />
+                    <textarea rows={5} value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none resize-none transition-all" />
                   </div>
                 </div>
                 <div className="pt-4 flex gap-4">
@@ -3545,9 +3732,10 @@ const ContactManager = () => {
     setIsSaving(true);
     try {
       await setDoc(doc(db, 'settings', 'contact'), contactInfo);
+      toast.success("Kontakt byl uložen!");
     } catch (err) {
       console.error(err);
-      alert("Chyba při ukládání");
+      toast.error("Chyba při ukládání");
     } finally {
       setIsSaving(false);
     }
@@ -3557,6 +3745,7 @@ const ContactManager = () => {
     if (!confirm("Opravdu smazat tuto zprávu?")) return;
     try {
       await deleteDoc(doc(db, 'contactSubmissions', id));
+      toast.success('Úspěšně smazáno!');
     } catch (err) {
       console.error(err);
     }
@@ -3579,43 +3768,39 @@ const ContactManager = () => {
             <div className="space-y-2">
               <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">E-mail pro web</label>
               <input 
-                required 
                 type="email"
                 value={contactInfo.email} 
                 onChange={e => setContactInfo({...contactInfo, email: e.target.value})} 
                 className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal focus:ring-1 focus:ring-brand-teal/20 outline-none transition-all" 
-                placeholder="info@denprobrno.cz" 
+                
               />
             </div>
             <div className="space-y-2">
               <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Telefon pro web</label>
               <input 
-                required 
                 value={contactInfo.phone} 
                 onChange={e => setContactInfo({...contactInfo, phone: e.target.value})} 
                 className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal focus:ring-1 focus:ring-brand-teal/20 outline-none transition-all" 
-                placeholder="+420 777 777 777" 
+                
               />
             </div>
             <div className="md:col-span-2 space-y-2">
               <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Uvítací text</label>
               <textarea 
-                required 
                 rows={10}
                 value={contactInfo.welcomeText} 
                 onChange={e => setContactInfo({...contactInfo, welcomeText: e.target.value})} 
                 className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal focus:ring-1 focus:ring-brand-teal/20 outline-none resize-none transition-all" 
-                placeholder="Ať už přijdete na chvíli..." 
+                
               />
             </div>
             <div className="md:col-span-2 space-y-2">
               <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Tagline</label>
               <input 
-                required 
                 value={contactInfo.tagline} 
                 onChange={e => setContactInfo({...contactInfo, tagline: e.target.value})} 
                 className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal focus:ring-1 focus:ring-brand-teal/20 outline-none transition-all" 
-                placeholder="Den pro Brno je tu pro vás" 
+                
               />
             </div>
             <div className="md:col-span-2 pt-4">
@@ -3690,8 +3875,12 @@ const ContactManager = () => {
 const SettingsManager = () => {
   const [logoPassive, setLogoPassive] = useState('');
   const [logoActive, setLogoActive] = useState('');
+  const [siteTitle, setSiteTitle] = useState('Den pro Brno');
+  const [faviconUrl, setFaviconUrl] = useState('/favicon.ico');
+  const [gaMeasurementId, setGaMeasurementId] = useState('');
   const [isUploadingPassive, setIsUploadingPassive] = useState(false);
   const [isUploadingActive, setIsUploadingActive] = useState(false);
+  const [isUploadingFavicon, setIsUploadingFavicon] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
@@ -3700,16 +3889,20 @@ const SettingsManager = () => {
         const data = doc.data();
         setLogoPassive(data.logoPassive || '');
         setLogoActive(data.logoActive || '');
+        setSiteTitle(data.title || 'Den pro Brno');
+        setFaviconUrl(data.faviconUrl || '/favicon.ico');
+        setGaMeasurementId(data.gaMeasurementId || '');
       }
     });
   }, []);
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'passive' | 'active') => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'passive' | 'active' | 'favicon') => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     if (type === 'passive') setIsUploadingPassive(true);
-    else setIsUploadingActive(true);
+    else if (type === 'active') setIsUploadingActive(true);
+    else setIsUploadingFavicon(true);
 
     const formData = new FormData();
     formData.append('file', file);
@@ -3722,14 +3915,16 @@ const SettingsManager = () => {
       const data = await response.json();
       if (data.url) {
         if (type === 'passive') setLogoPassive(data.url);
-        else setLogoActive(data.url);
+        else if (type === 'active') setLogoActive(data.url);
+        else setFaviconUrl(data.url);
       }
     } catch (err) {
       console.error('Upload failed:', err);
-      alert('Chyba při nahrávání loga');
+      toast.error('Chyba při nahrávání obrázku');
     } finally {
       if (type === 'passive') setIsUploadingPassive(false);
-      else setIsUploadingActive(false);
+      else if (type === 'active') setIsUploadingActive(false);
+      else setIsUploadingFavicon(false);
     }
   };
 
@@ -3739,12 +3934,21 @@ const SettingsManager = () => {
       await setDoc(doc(db, 'settings', 'global'), {
         logoPassive,
         logoActive,
+        title: siteTitle,
+        faviconUrl,
+        gaMeasurementId,
         updatedAt: serverTimestamp()
       }, { merge: true });
-      alert('Nastavení uloženo');
+      toast.success('Nastavení bylo úspěšně upraveno!');
+      // Apply changes locally
+      document.title = siteTitle;
+      const link: HTMLLinkElement = document.querySelector("link[rel~='icon']") || document.createElement('link');
+      link.rel = 'icon';
+      link.href = faviconUrl;
+      document.head.appendChild(link);
     } catch (err) {
       console.error(err);
-      alert('Chyba při ukládání');
+      toast.error('Chyba při ukládání');
     } finally {
       setIsSaving(false);
     }
@@ -3761,7 +3965,29 @@ const SettingsManager = () => {
         </div>
       </header>
 
-      <section className="bg-white border border-slate-200 p-10 rounded-[2.5rem] shadow-sm space-y-12">
+       <section className="bg-white border border-slate-200 p-10 rounded-[2.5rem] shadow-sm space-y-12">
+        <div className="text-left space-y-6">
+          <h3 className="text-xl font-black uppercase tracking-tighter text-slate-900">Všeobecné nastavení</h3>
+          <div className="space-y-2">
+            <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Titulek stránky v prohlížeči</label>
+            <input value={siteTitle} onChange={e => setSiteTitle(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all" />
+          </div>
+          <div className="space-y-2">
+            <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Google Analytics Measurement ID (např. G-XXXXXXXXXX)</label>
+            <input value={gaMeasurementId} onChange={e => setGaMeasurementId(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all" />
+          </div>
+          <div className="space-y-2">
+            <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Ikona v prohlížeči (Favicon)</label>
+            <div className="flex items-center gap-4">
+              <div className="w-16 h-16 bg-slate-50 rounded-xl border border-dashed border-slate-200 flex items-center justify-center overflow-hidden">
+                <img src={faviconUrl} alt="Favicon" className="max-h-10 max-w-10" />                
+              </div>
+              <input type="file" onChange={e => handleFileUpload(e, 'favicon')} className="text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:bg-brand-teal file:text-black hover:file:bg-brand-teal-light" accept="image/x-icon,image/png,image/svg+xml" />
+              {isUploadingFavicon && <Loader2 className="animate-spin text-brand-teal" size={24} />}
+            </div>
+          </div>
+        </div>
+
         <div className="text-left">
           <h3 className="text-xl font-black uppercase tracking-tighter mb-2 text-slate-900">Loga v navigaci</h3>
         </div>
@@ -3770,7 +3996,7 @@ const SettingsManager = () => {
           {/* Passive Logo */}
           <div className="space-y-6">
             <div className="text-left">
-              <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-4 block">Pasivní Logo (Průhledná navigace)</label>
+              <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-4 block">Pasivní Logo</label>
               <div className="relative group">
                 <div className="w-full h-48 bg-brand-red rounded-3xl border-2 border-dashed border-white/20 flex items-center justify-center overflow-hidden transition-all group-hover:border-brand-teal/50">
                   <img 
@@ -3799,7 +4025,7 @@ const SettingsManager = () => {
           {/* Active Logo */}
           <div className="space-y-6">
             <div className="text-left">
-              <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-4 block">Aktivní Logo (Scrollovaná navigace)</label>
+              <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-4 block">Aktivní Logo</label>
               <div className="relative group">
                 <div className="w-full h-48 bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200 flex items-center justify-center overflow-hidden transition-all group-hover:border-brand-teal/50">
                   <img 
@@ -3850,9 +4076,16 @@ export default function Admin() {
   const [communityCount, setCommunityCount] = useState(0);
   const [aboutCount, setAboutCount] = useState(0);
   const [submissionsCount, setSubmissionsCount] = useState(0);
+  const [visitsCount, setVisitsCount] = useState(0);
   const [logoPassive, setLogoPassive] = useState('');
 
   useEffect(() => {
+    const unsubVisits = onSnapshot(doc(db, 'settings', 'stats'), (snapshot) => {
+      if (snapshot.exists()) {
+        setVisitsCount(snapshot.data().totalVisits || 0);
+      }
+    });
+
     const unsubGlobal = onSnapshot(doc(db, 'settings', 'global'), (snapshot) => {
       if (snapshot.exists()) {
         setLogoPassive(snapshot.data().logoPassive || '');
@@ -3895,6 +4128,7 @@ export default function Admin() {
     });
 
     return () => {
+      unsubVisits();
       unsubGlobal();
       unsub1();
       unsub2();
@@ -3913,6 +4147,34 @@ export default function Admin() {
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-slate-900 flex flex-col md:flex-row">
+      <Toaster 
+        position="top-center" 
+        toastOptions={{ 
+          duration: 3000, 
+          style: { 
+            background: 'linear-gradient(135deg, #AF1E4E 0%, #8a173d 100%)', 
+            color: '#fff', 
+            fontWeight: '600',
+            letterSpacing: '0.02em',
+            borderRadius: '24px',
+            padding: '16px 28px',
+            boxShadow: '0 20px 40px -10px rgba(175,30,78,0.5)',
+            border: '1px solid rgba(255,255,255,0.1)'
+          },
+          success: {
+            iconTheme: {
+              primary: '#8ED6D6',
+              secondary: '#AF1E4E',
+            },
+          },
+          error: {
+            iconTheme: {
+              primary: '#FFCD29',
+              secondary: '#AF1E4E',
+            },
+          }
+        }} 
+      />
       {/* Sidebar */}
       <aside className="w-full md:w-72 brand-gradient border-r border-white/10 p-6 flex flex-col z-20 text-left text-white shadow-2xl">
         <div className="mb-12 flex items-center gap-4">
@@ -3972,9 +4234,9 @@ export default function Admin() {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 p-8 md:p-16 max-w-5xl overflow-y-auto admin-main">
+      <main className="flex-1 p-8 md:p-16 max-w-[1600px] w-full mx-auto overflow-y-auto admin-main">
         <Routes>
-          <Route path="/" element={<AdminDashboard artistsCount={artistsCount} infoCount={infoCount} talkshowsCount={talkshowsCount} familyCount={familyCount} communityCount={communityCount} aboutCount={aboutCount} submissionsCount={submissionsCount} />} />
+          <Route path="/" element={<AdminDashboard artistsCount={artistsCount} infoCount={infoCount} talkshowsCount={talkshowsCount} familyCount={familyCount} communityCount={communityCount} aboutCount={aboutCount} submissionsCount={submissionsCount} visitsCount={visitsCount} />} />
           <Route path="/intro" element={<IntroManager />} />
           <Route path="/program" element={<ProgramDashboard />} />
           <Route path="/program/music" element={<ProgramManager />} />
