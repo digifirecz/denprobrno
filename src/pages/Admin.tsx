@@ -353,7 +353,7 @@ const ProgramDashboard = () => {
   );
 };
 
-const AdminDashboard = ({ artistsCount, infoCount, talkshowsCount, familyCount, communityCount, aboutCount, submissionsCount, visitsCount }: { artistsCount: number, infoCount: number, talkshowsCount: number, familyCount: number, communityCount: number, aboutCount: number, submissionsCount: number, visitsCount: number }) => (
+const AdminDashboard = ({ artistsCount, infoCount, talkshowsCount, familyCount, communityCount, aboutCount, submissionsCount }: { artistsCount: number, infoCount: number, talkshowsCount: number, familyCount: number, communityCount: number, aboutCount: number, submissionsCount: number }) => (
   <div className="space-y-12 animate-in fade-in duration-700">
     <header className="flex justify-between items-center bg-white p-8 rounded-3xl border border-slate-200 shadow-sm shadow-slate-200/50 text-slate-900 text-left">
       <div className="text-left">
@@ -373,7 +373,6 @@ const AdminDashboard = ({ artistsCount, infoCount, talkshowsCount, familyCount, 
         { label: 'Praktické info', count: infoCount, icon: Info, color: 'bg-slate-100', link: '/admin/info' },
         { label: 'O festivalu', count: aboutCount, icon: Heart, color: 'bg-slate-100', link: '/admin/about' },
         { label: 'Zprávy z webu', count: submissionsCount, icon: MessageSquare, color: 'bg-slate-100', link: '/admin/contact' },
-        { label: 'Celkem návštěv', count: visitsCount, icon: BarChart3, color: 'bg-brand-teal/20', link: '#' },
       ].map((stat, i) => (
         <motion.div 
           key={stat.label}
@@ -4093,16 +4092,9 @@ export default function Admin() {
   const [communityCount, setCommunityCount] = useState(0);
   const [aboutCount, setAboutCount] = useState(0);
   const [submissionsCount, setSubmissionsCount] = useState(0);
-  const [visitsCount, setVisitsCount] = useState(0);
   const [logoPassive, setLogoPassive] = useState('');
 
   useEffect(() => {
-    const unsubVisits = onSnapshot(doc(db, 'settings', 'stats'), (snapshot) => {
-      if (snapshot.exists()) {
-        setVisitsCount(snapshot.data().totalVisits || 0);
-      }
-    });
-
     const unsubGlobal = onSnapshot(doc(db, 'settings', 'global'), (snapshot) => {
       if (snapshot.exists()) {
         setLogoPassive(snapshot.data().logoPassive || '');
@@ -4145,7 +4137,6 @@ export default function Admin() {
     });
 
     return () => {
-      unsubVisits();
       unsubGlobal();
       unsub1();
       unsub2();
@@ -4253,7 +4244,7 @@ export default function Admin() {
       {/* Main Content */}
       <main className="flex-1 p-8 md:p-16 max-w-[1600px] w-full mx-auto overflow-y-auto admin-main">
         <Routes>
-          <Route path="/" element={<AdminDashboard artistsCount={artistsCount} infoCount={infoCount} talkshowsCount={talkshowsCount} familyCount={familyCount} communityCount={communityCount} aboutCount={aboutCount} submissionsCount={submissionsCount} visitsCount={visitsCount} />} />
+          <Route path="/" element={<AdminDashboard artistsCount={artistsCount} infoCount={infoCount} talkshowsCount={talkshowsCount} familyCount={familyCount} communityCount={communityCount} aboutCount={aboutCount} submissionsCount={submissionsCount} />} />
           <Route path="/intro" element={<IntroManager />} />
           <Route path="/program" element={<ProgramDashboard />} />
           <Route path="/program/music" element={<ProgramManager />} />

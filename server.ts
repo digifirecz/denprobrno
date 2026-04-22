@@ -37,16 +37,19 @@ async function startServer() {
     const file = bucket.file(fileName);
 
     try {
+      console.log('Attempting upload to Firebase Storage:', fileName);
+      console.log('Buffer size:', buffer.length);
       await file.save(buffer, {
         metadata: { contentType: mimetype },
         public: true // Make file public
       });
+      console.log('Upload successful');
 
       const url = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
       res.json({ url });
     } catch (err: any) {
-      console.error('Firebase upload error:', err);
-      res.status(500).json({ error: 'Failed to upload to Firebase.' });
+      console.error('Firebase upload error detailed:', err);
+      res.status(500).json({ error: 'Failed to upload to Firebase: ' + err.message });
     }
   });
 
