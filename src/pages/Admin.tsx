@@ -2,6 +2,7 @@ import { Toaster, toast } from 'react-hot-toast';
 import { Routes, Route, Link, useNavigate } from 'react-router-dom';
 import { signOut } from 'firebase/auth';
 import { auth, db } from '../lib/firebase';
+import { API_URL } from '../lib/api';
 import { 
   collection, 
   onSnapshot, 
@@ -4086,15 +4087,6 @@ export default function Admin() {
   const { user } = useAuth();
   const navigate = useNavigate();
   
-  const getApiUrl = () => {
-    const origin = window.location.origin;
-    if (origin.includes('vercel.app')) {
-      return 'https://ais-pre-g2juvihdzewqfrd42vfmaw-754701656249.europe-west2.run.app';
-    }
-    return ''; // Relative path for same-domain
-  };
-  const API_URL = getApiUrl();
-
   const [artistsCount, setArtistsCount] = useState(0);
   const [talkshowsCount, setTalkshowsCount] = useState(0);
   const [infoCount, setInfoCount] = useState(0);
