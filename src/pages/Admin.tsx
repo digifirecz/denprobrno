@@ -482,13 +482,17 @@ const IntroManager = () => {
         method: 'POST',
         body: formData,
       });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Server returned ${response.status}`);
+      }
       const data = await response.json();
       if (data.url) {
         setHeroData(prev => ({ ...prev, imageUrl: data.url }));
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Upload failed:', err);
-      toast.error('Chyba při nahrávání obrázku');
+      toast.error(`Chyba při nahrávání: ${err.message}`);
     } finally {
       setIsUploading(false);
     }
@@ -2994,7 +2998,7 @@ const CommunityManager: React.FC = () => {
     setIsSubmitting(true);
     try {
       const isSmallSection = formData.title === 'Zóna klidu' || formData.title === 'Malá sekce' || formData.title === 'Malá';
-      const cleanData = {
+      const dataToSave = {
         title: formData.title,
         name: formData.name,
         description: formData.description,
@@ -3004,6 +3008,12 @@ const CommunityManager: React.FC = () => {
         icon: formData.icon,
         updatedAt: serverTimestamp()
       };
+      
+      if (editingSection) {
+        await updateDoc(doc(db, 'communitySections', editingSection.id), dataToSave);
+      } else {
+        await addDoc(collection(db, 'communitySections'), dataToSave);
+      }
       
       toast.success(editingSection ? 'Úspěšně upraveno!' : 'Úspěšně vytvořeno!');
       setIsModalOpen(false);
@@ -3266,8 +3276,8 @@ const CommunityManager: React.FC = () => {
                   </div>
 
                   <div className="md:col-span-2 space-y-2">
-                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Popis <span className="text-brand-red">*</span></label>
-                    <textarea required rows={3} value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-4 text-slate-900 focus:border-brand-teal outline-none resize-none transition-all" />
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Popis</label>
+                    <textarea rows={3} value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-4 text-slate-900 focus:border-brand-teal outline-none resize-none transition-all" />
                   </div>
 
                   { (formData.title === 'Malá sekce' || formData.title === 'Malá' || formData.title === 'Zóna klidu') ? (
@@ -3294,8 +3304,8 @@ const CommunityManager: React.FC = () => {
                                 <input required value={item.name} onChange={e => handleItemChange(index, 'name', e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2 text-sm text-slate-900 outline-none focus:border-brand-teal" />
                               </div>
                               <div className="space-y-1 text-left">
-                                <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Popis <span className="text-brand-red">*</span></label>
-                                <input required value={item.description} onChange={e => handleItemChange(index, 'description', e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2 text-xs text-slate-500 outline-none focus:border-brand-teal" />
+                                <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Popis</label>
+                                <input value={item.description} onChange={e => handleItemChange(index, 'description', e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2 text-xs text-slate-500 outline-none focus:border-brand-teal" />
                               </div>
                             </div>
                           </div>
@@ -3915,15 +3925,19 @@ const SettingsManager = () => {
         method: 'POST',
         body: formData,
       });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Server returned ${response.status}`);
+      }
       const data = await response.json();
       if (data.url) {
         if (type === 'passive') setLogoPassive(data.url);
         else if (type === 'active') setLogoActive(data.url);
         else setFaviconUrl(data.url);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Upload failed:', err);
-      toast.error('Chyba při nahrávání obrázku');
+      toast.error(`Chyba při nahrávání: ${err.message}`);
     } finally {
       if (type === 'passive') setIsUploadingPassive(false);
       else if (type === 'active') setIsUploadingActive(false);
