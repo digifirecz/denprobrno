@@ -256,7 +256,8 @@ export default function Home() {
   });
   const [globalSettings, setGlobalSettings] = useState({
     logoPassive: '',
-    logoActive: ''
+    logoActive: '',
+    copyright: '© 2026 DEN PRO BRNO'
   });
 
   // Fetch Global Settings (Logos, Title, etc.)
@@ -266,7 +267,8 @@ export default function Home() {
         const data = snapshot.data();
         setGlobalSettings({
           logoPassive: data.logoPassive || '',
-          logoActive: data.logoActive || ''
+          logoActive: data.logoActive || '',
+          copyright: data.copyright || '© 2026 DEN PRO BRNO'
         });
         if (data.title) {
           document.title = data.title;
@@ -1381,7 +1383,7 @@ export default function Home() {
               <div className="flex items-center gap-4">
                 <Heart size={24} className="text-brand-red animate-pulse" />
                 <div className="text-[10px] font-black uppercase tracking-[0.5em] text-white/30">
-                  <p>© 2026 DEN PRO BRNO</p>
+                  <p>{globalSettings.copyright}</p>
                 </div>
               </div>
               <div className="text-[10px] font-bold uppercase tracking-widest text-white/30">

@@ -3976,6 +3976,7 @@ const SettingsManager = () => {
   const [ogDescription, setOgDescription] = useState('Kulturně-komunitní festival pro Brno');
   const [faviconUrl, setFaviconUrl] = useState('');
   const [gaMeasurementId, setGaMeasurementId] = useState('');
+  const [copyrightText, setCopyrightText] = useState('© 2026 DEN PRO BRNO');
   const [isUploadingPassive, setIsUploadingPassive] = useState(false);
   const [isUploadingActive, setIsUploadingActive] = useState(false);
   const [isUploadingFavicon, setIsUploadingFavicon] = useState(false);
@@ -3993,6 +3994,7 @@ const SettingsManager = () => {
         setOgDescription(data.ogDescription || 'Kulturně-komunitní festival pro Brno');
         setFaviconUrl(data.faviconUrl || '');
         setGaMeasurementId(data.gaMeasurementId || '');
+        setCopyrightText(data.copyright || '© 2026 DEN PRO BRNO');
       }
     });
   }, []);
@@ -4043,6 +4045,7 @@ const SettingsManager = () => {
         ogDescription,
         faviconUrl,
         gaMeasurementId,
+        copyright: copyrightText,
         updatedAt: serverTimestamp()
       }, { merge: true });
       toast.success('Nastavení bylo úspěšně upraveno!');
@@ -4113,6 +4116,10 @@ const SettingsManager = () => {
           <div className="space-y-2">
             <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Google Analytics Measurement ID (např. G-XXXXXXXXXX)</label>
             <input value={gaMeasurementId} onChange={e => setGaMeasurementId(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all" />
+          </div>
+          <div className="space-y-2">
+            <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Copyright</label>
+            <input value={copyrightText} onChange={e => setCopyrightText(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all" placeholder="Např. © 2026 DEN PRO BRNO" />
           </div>
           <div className="space-y-2">
             <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Ikona v prohlížeči (Favicon)</label>
