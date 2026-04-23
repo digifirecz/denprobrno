@@ -1,8 +1,8 @@
-import { Toaster, toast } from 'react-hot-toast';
+import { toast } from 'react-hot-toast';
 import { Routes, Route, Link, useNavigate } from 'react-router-dom';
 import { signOut } from 'firebase/auth';
-import { auth, db } from '../lib/firebase';
-import { API_URL } from '../lib/api';
+import { auth, db, storage } from '../lib/firebase.ts';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { 
   collection, 
   onSnapshot, 
@@ -61,7 +61,7 @@ import {
   FileText,
   Upload
 } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/AuthContext.tsx';
 
 interface Artist {
   id: string;
@@ -407,9 +407,18 @@ const AdminDashboard = ({ artistsCount, infoCount, talkshowsCount, familyCount, 
   </div>
 );
 
+// Helper to check if an image URL is a valid upload (must be a Firebase Storage URL or a local blob)
+const isValidImageUrl = (url: string | undefined | null) => {
+  if (!url) return false;
+  // If it's a relative path (starts with /), it's a legacy default and we treat it as "not set"
+  if (url.startsWith('/')) return false;
+  // Only allow Firebase Storage URLs or local blobs (for previews before upload)
+  return url.startsWith('http') || url.startsWith('blob:');
+};
+
 const IntroManager = () => {
   const [heroData, setHeroData] = useState({ 
-    imageUrl: '/hero-full-trans.png', 
+    imageUrl: '', 
     moto: 'Naším cílem je přinést do města radost, povzbuzení a naději, která má skutečný přesah',
     quote: 'Přijďte strávit den, který může něco změnit'
   });
@@ -442,7 +451,7 @@ const IntroManager = () => {
       if (snapshot.exists()) {
         const data = snapshot.data();
         setHeroData({
-          imageUrl: data.imageUrl || '/hero-full-trans.png',
+          imageUrl: data.imageUrl || '',
           moto: data.moto ?? 'Naším cílem je přinést do města radost, povzbuzení a naději, která má skutečný přesah',
           quote: data.quote ?? 'Přijďte strávit den, který může něco změnit'
         });
@@ -474,21 +483,16 @@ const IntroManager = () => {
     if (!file) return;
 
     setIsUploading(true);
-    const formData = new FormData();
-    formData.append('file', file);
 
     try {
-      const response = await fetch(`${API_URL}/api/upload`, {
-        method: 'POST',
-        body: formData,
-      });
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || `Server returned ${response.status}`);
-      }
-      const data = await response.json();
-      if (data.url) {
-        setHeroData(prev => ({ ...prev, imageUrl: data.url }));
+      const fileName = 'intro/banner';
+      const storageRef = ref(storage, fileName);
+      
+      const snapshot = await uploadBytes(storageRef, file);
+      const url = await getDownloadURL(snapshot.ref);
+      
+      if (url) {
+        setHeroData(prev => ({ ...prev, imageUrl: url }));
       }
     } catch (err: any) {
       console.error('Upload failed:', err);
@@ -652,15 +656,23 @@ const IntroManager = () => {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
               <div className="space-y-6">
                 <div className="space-y-2">
-                  <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Úvodní hlavní kmen</label>
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Banner</label>
                   <div className="relative group">
                     <div className="w-full h-64 bg-brand-red rounded-3xl border-2 border-dashed border-white/20 flex items-center justify-center overflow-hidden transition-all group-hover:border-brand-teal/50">
-                      <img 
-                        src={heroData.imageUrl} 
-                        alt="Hero Logo" 
-                        className="max-h-48 w-auto object-contain drop-shadow-2xl" 
-                        referrerPolicy="no-referrer" 
-                      />
+                      {isValidImageUrl(heroData.imageUrl) ? (
+                        <img 
+                          src={heroData.imageUrl} 
+                          alt="Hero Logo" 
+                          className="max-h-48 w-auto object-contain drop-shadow-2xl" 
+                          referrerPolicy="no-referrer" 
+                          onError={() => setHeroData(prev => ({ ...prev, imageUrl: '' }))}
+                        />
+                      ) : (
+                        <div className="flex flex-col items-center space-y-2">
+                          <Upload size={32} className="text-white/40" />
+                          <p className="text-white/60 text-xs font-bold uppercase tracking-widest">Kliknutím vložte obrázek</p>
+                        </div>
+                      )}
                       <input 
                         type="file" 
                         onChange={handleFileUpload}
@@ -675,7 +687,9 @@ const IntroManager = () => {
                       )}
                     </div>
                   </div>
-                  <p className="mt-3 text-[10px] text-slate-400 italic">Klikněte na obrázek pro nahrání nového (png s průhledností)</p>
+                  <p className="mt-3 text-[10px] text-slate-400 italic">
+                    {isValidImageUrl(heroData.imageUrl) ? 'Vlastní banner' : 'Žádný banner (nebude zobrazeno)'}
+                  </p>
                 </div>
 
                 <div className="space-y-2">
@@ -707,7 +721,14 @@ const IntroManager = () => {
                 <div className="brand-gradient rounded-3xl overflow-hidden flex flex-col items-center pt-10 pb-16 px-8 text-center space-y-8 min-h-[500px]">
                   {/* Hero Part */}
                   <div className="flex flex-col items-center space-y-4">
-                    <img src={heroData.imageUrl} alt="Hero" className="max-w-[150px] h-auto drop-shadow-2xl opacity-90" />
+                    {isValidImageUrl(heroData.imageUrl) && (
+                      <img 
+                        src={heroData.imageUrl} 
+                        alt="Hero" 
+                        className="max-w-[150px] h-auto drop-shadow-2xl opacity-90" 
+                        onError={() => setHeroData(prev => ({ ...prev, imageUrl: '' }))}
+                      />
+                    )}
                     {heroData.moto && heroData.moto.trim() !== '' && (
                       <>
                         <p className="text-white/80 text-xs font-medium leading-relaxed max-w-[200px]">{heroData.moto}</p>
@@ -770,7 +791,7 @@ const IntroManager = () => {
             <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-brand-teal/10 blur-[120px] -mr-64 -mt-64" />
             <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-brand-yellow/5 blur-[120px] -ml-64 -mb-64" />
             
-            <div className="relative z-10 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="relative z-10 grid grid-cols-1 md:grid-cols-2 gap-8">
               {introSections.length === 0 ? (
                 <div className="md:col-span-2 py-32 text-center border border-dashed border-white/20 rounded-[2rem] text-white/20 font-bold uppercase tracking-[0.5em] text-xs">
                   Zde se zobrazí náhled bloků vize
@@ -779,23 +800,19 @@ const IntroManager = () => {
                 introSections.map((section, idx) => (
                   <div 
                     key={section.id}
-                    className={`p-10 md:p-12 rounded-[2rem] space-y-6 relative group overflow-hidden shadow-2xl text-left ${
-                      idx % 2 === 0 
-                        ? 'bg-[#B52D56]' 
-                        : 'bg-[#4A0A21]'
-                    }`}
+                    className={`${idx % 2 === 0 ? 'bg-black/20' : 'bg-black/40'} p-10 md:p-14 space-y-8 relative group overflow-hidden rounded-3xl border border-white/5 shadow-2xl text-left`}
                   >
                     <div className="flex items-center gap-4">
-                      <div className={`h-px w-6 ${idx % 2 === 0 ? 'bg-brand-yellow' : 'bg-brand-teal'}`} />
-                      <p className={`text-[10px] font-black uppercase tracking-[0.4em] ${idx % 2 === 0 ? 'text-brand-yellow' : 'text-brand-teal'}`}>
+                      <div className={`h-0.5 w-8 ${idx % 2 === 0 ? 'bg-brand-yellow' : 'bg-brand-teal'}`} />
+                      <p className={`text-xs font-black uppercase tracking-[0.4em] ${idx % 2 === 0 ? 'text-brand-yellow' : 'text-brand-teal'}`}>
                         {section.tag}
                       </p>
                     </div>
                     <div className="space-y-4">
-                      <h4 className="text-xl md:text-2xl font-sans font-bold leading-[1.2] tracking-tighter text-white whitespace-pre-wrap">
+                      <h4 className="text-2xl md:text-3xl font-sans font-bold leading-tight tracking-tighter text-white whitespace-pre-wrap">
                         {section.title}
                       </h4>
-                      <p className="text-sm text-white/70 leading-relaxed font-medium">
+                      <p className="text-lg text-white/80 leading-relaxed font-light whitespace-pre-wrap">
                         {section.description}
                       </p>
                     </div>
@@ -3714,6 +3731,8 @@ const ContactManager = () => {
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [submissionToDelete, setSubmissionToDelete] = useState<ContactSubmission | null>(null);
 
   useEffect(() => {
     // Fetch submissions
@@ -3754,13 +3773,19 @@ const ContactManager = () => {
     }
   };
 
-  const handleDeleteSubmission = async (id: string) => {
-    if (!confirm("Opravdu smazat tuto zprávu?")) return;
+  const handleDeleteSubmission = async () => {
+    if (!submissionToDelete) return;
+    setIsDeleting(true);
     try {
-      await deleteDoc(doc(db, 'contactSubmissions', id));
+      await deleteDoc(doc(db, 'contactSubmissions', submissionToDelete.id));
       toast.success('Úspěšně smazáno!');
+      setIsDeleteModalOpen(false);
+      setSubmissionToDelete(null);
     } catch (err) {
       console.error(err);
+      toast.error('Chyba při mazání');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -3868,10 +3893,14 @@ const ContactManager = () => {
                     {sub.message}
                   </p>
                 </div>
-                <div className="flex justify-end pt-2 md:pt-0">
+                <div className="flex justify-end pt-2 md:pt-0 relative z-20">
                   <button 
-                    onClick={() => handleDeleteSubmission(sub.id)}
-                    className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center hover:bg-brand-red text-slate-400 hover:text-white transition-all border border-slate-100"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSubmissionToDelete(sub);
+                      setIsDeleteModalOpen(true);
+                    }}
+                    className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center hover:bg-brand-red text-slate-400 hover:text-white transition-all border border-slate-100 cursor-pointer pointer-events-auto"
                   >
                     <Trash2 size={20} />
                   </button>
@@ -3881,6 +3910,40 @@ const ContactManager = () => {
           )}
         </div>
       </section>
+
+      {/* Delete Confirmation Modal */}
+      <AnimatePresence>
+        {isDeleteModalOpen && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-6 bg-black/80 backdrop-blur-sm">
+            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl p-10 text-center">
+              <div className="w-20 h-20 rounded-3xl bg-brand-red/10 text-brand-red flex items-center justify-center mx-auto mb-6">
+                <Trash2 size={40} />
+              </div>
+              <h3 className="text-2xl font-black uppercase tracking-tighter text-slate-900 mb-2">Smazat zprávu?</h3>
+              <p className="text-slate-400 text-sm font-medium mb-10 leading-relaxed text-center">Opravdu chcete smazat tuto zprávu od <strong>{submissionToDelete?.name}</strong>? Tato akce je nevratná.</p>
+              <div className="flex gap-4">
+                <button 
+                  onClick={handleDeleteSubmission} 
+                  disabled={isDeleting}
+                  className="flex-1 py-4 bg-brand-red text-white rounded-xl font-black uppercase tracking-widest shadow-lg hover:bg-red-600 transition-all disabled:opacity-50"
+                >
+                  {isDeleting ? 'Mažu...' : 'Smazat'}
+                </button>
+                <button 
+                  onClick={() => {
+                    setIsDeleteModalOpen(false);
+                    setSubmissionToDelete(null);
+                  }} 
+                  disabled={isDeleting}
+                  className="flex-1 py-4 bg-slate-50 text-slate-400 rounded-xl font-black uppercase tracking-widest hover:bg-slate-100 transition-all disabled:opacity-50"
+                >
+                  Zrušit
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
@@ -3889,7 +3952,7 @@ const SettingsManager = () => {
   const [logoPassive, setLogoPassive] = useState('');
   const [logoActive, setLogoActive] = useState('');
   const [siteTitle, setSiteTitle] = useState('Den pro Brno');
-  const [faviconUrl, setFaviconUrl] = useState('/favicon.ico');
+  const [faviconUrl, setFaviconUrl] = useState('');
   const [gaMeasurementId, setGaMeasurementId] = useState('');
   const [isUploadingPassive, setIsUploadingPassive] = useState(false);
   const [isUploadingActive, setIsUploadingActive] = useState(false);
@@ -3903,7 +3966,7 @@ const SettingsManager = () => {
         setLogoPassive(data.logoPassive || '');
         setLogoActive(data.logoActive || '');
         setSiteTitle(data.title || 'Den pro Brno');
-        setFaviconUrl(data.faviconUrl || '/favicon.ico');
+        setFaviconUrl(data.faviconUrl || '');
         setGaMeasurementId(data.gaMeasurementId || '');
       }
     });
@@ -3917,23 +3980,21 @@ const SettingsManager = () => {
     else if (type === 'active') setIsUploadingActive(true);
     else setIsUploadingFavicon(true);
 
-    const formData = new FormData();
-    formData.append('file', file);
-
     try {
-      const response = await fetch(`${API_URL}/api/upload`, {
-        method: 'POST',
-        body: formData,
-      });
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || `Server returned ${response.status}`);
-      }
-      const data = await response.json();
-      if (data.url) {
-        if (type === 'passive') setLogoPassive(data.url);
-        else if (type === 'active') setLogoActive(data.url);
-        else setFaviconUrl(data.url);
+      let fileName = '';
+      if (type === 'passive') fileName = 'settings/logo-passive';
+      else if (type === 'active') fileName = 'settings/logo-active';
+      else fileName = 'settings/favicon';
+      
+      const storageRef = ref(storage, fileName);
+      
+      const snapshot = await uploadBytes(storageRef, file);
+      const url = await getDownloadURL(snapshot.ref);
+
+      if (url) {
+        if (type === 'passive') setLogoPassive(url);
+        else if (type === 'active') setLogoActive(url);
+        else setFaviconUrl(url);
       }
     } catch (err: any) {
       console.error('Upload failed:', err);
@@ -3997,7 +4058,16 @@ const SettingsManager = () => {
             <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Ikona v prohlížeči (Favicon)</label>
             <div className="flex items-center gap-4">
               <div className="w-16 h-16 bg-slate-50 rounded-xl border border-dashed border-slate-200 flex items-center justify-center overflow-hidden">
-                <img src={faviconUrl} alt="Favicon" className="max-h-10 max-w-10" />                
+                {isValidImageUrl(faviconUrl) ? (
+                  <img 
+                    src={faviconUrl} 
+                    alt="Favicon" 
+                    className="max-h-10 max-w-10" 
+                    onError={() => setFaviconUrl('')}
+                  />                
+                ) : (
+                  <Upload size={20} className="text-slate-300" />
+                )}
               </div>
               <input type="file" onChange={e => handleFileUpload(e, 'favicon')} className="text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:bg-brand-teal file:text-black hover:file:bg-brand-teal-light" accept="image/x-icon,image/png,image/svg+xml" />
               {isUploadingFavicon && <Loader2 className="animate-spin text-brand-teal" size={24} />}
@@ -4016,12 +4086,20 @@ const SettingsManager = () => {
               <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-4 block">Pasivní Logo</label>
               <div className="relative group">
                 <div className="w-full h-48 bg-brand-red rounded-3xl border-2 border-dashed border-white/20 flex items-center justify-center overflow-hidden transition-all group-hover:border-brand-teal/50">
-                  <img 
-                    src={logoPassive || "/logo-white.png"} 
-                    alt="Passive Logo" 
-                    className="max-h-24 w-auto object-contain" 
-                    referrerPolicy="no-referrer" 
-                  />
+                  {isValidImageUrl(logoPassive) ? (
+                    <img 
+                      src={logoPassive} 
+                      alt="Passive Logo" 
+                      className="max-h-24 w-auto object-contain" 
+                      referrerPolicy="no-referrer" 
+                      onError={() => setLogoPassive('')}
+                    />
+                  ) : (
+                    <div className="flex flex-col items-center space-y-2">
+                       <Upload size={24} className="text-white/40" />
+                       <p className="text-white/60 text-[10px] font-bold uppercase tracking-widest text-center px-4">Kliknutím vložte pasivní logo</p>
+                    </div>
+                  )}
                   <input 
                     type="file" 
                     onChange={e => handleFileUpload(e, 'passive')}
@@ -4035,7 +4113,9 @@ const SettingsManager = () => {
                   )}
                 </div>
               </div>
-              <p className="mt-3 text-[10px] text-slate-400 italic">Aktuálně zvoleno: {logoPassive ? 'Vlastní logo' : 'Výchozí (logo-white.png)'}</p>
+              <p className="mt-3 text-[10px] text-slate-400 italic">
+                {isValidImageUrl(logoPassive) ? 'Vlastní logo' : 'Žádné logo (nebude zobrazeno)'}
+              </p>
             </div>
           </div>
 
@@ -4045,12 +4125,20 @@ const SettingsManager = () => {
               <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-4 block">Aktivní Logo</label>
               <div className="relative group">
                 <div className="w-full h-48 bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200 flex items-center justify-center overflow-hidden transition-all group-hover:border-brand-teal/50">
-                  <img 
-                    src={logoActive || "/logo-blue.png"} 
-                    alt="Active Logo" 
-                    className="max-h-24 w-auto object-contain" 
-                    referrerPolicy="no-referrer" 
-                  />
+                  {isValidImageUrl(logoActive) ? (
+                    <img 
+                      src={logoActive} 
+                      alt="Active Logo" 
+                      className="max-h-24 w-auto object-contain" 
+                      referrerPolicy="no-referrer" 
+                      onError={() => setLogoActive('')}
+                    />
+                  ) : (
+                    <div className="flex flex-col items-center space-y-2 text-slate-400">
+                       <Upload size={24} />
+                       <p className="text-[10px] font-bold uppercase tracking-widest text-center px-4">Kliknutím vložte aktivní logo</p>
+                    </div>
+                  )}
                   <input 
                     type="file" 
                     onChange={e => handleFileUpload(e, 'active')}
@@ -4064,7 +4152,9 @@ const SettingsManager = () => {
                   )}
                 </div>
               </div>
-              <p className="mt-3 text-[10px] text-slate-400 italic">Aktuálně zvoleno: {logoActive ? 'Vlastní logo' : 'Výchozí (logo-blue.png)'}</p>
+              <p className="mt-3 text-[10px] text-slate-400 italic">
+                {isValidImageUrl(logoActive) ? 'Vlastní logo' : 'Žádné logo (nebude zobrazeno)'}
+              </p>
             </div>
           </div>
         </div>
@@ -4157,44 +4247,19 @@ export default function Admin() {
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-slate-900 flex flex-col md:flex-row">
-      <Toaster 
-        position="top-center" 
-        toastOptions={{ 
-          duration: 3000, 
-          style: { 
-            background: 'linear-gradient(135deg, #AF1E4E 0%, #8a173d 100%)', 
-            color: '#fff', 
-            fontWeight: '600',
-            letterSpacing: '0.02em',
-            borderRadius: '24px',
-            padding: '16px 28px',
-            boxShadow: '0 20px 40px -10px rgba(175,30,78,0.5)',
-            border: '1px solid rgba(255,255,255,0.1)'
-          },
-          success: {
-            iconTheme: {
-              primary: '#8ED6D6',
-              secondary: '#AF1E4E',
-            },
-          },
-          error: {
-            iconTheme: {
-              primary: '#FFCD29',
-              secondary: '#AF1E4E',
-            },
-          }
-        }} 
-      />
       {/* Sidebar */}
       <aside className="w-full md:w-72 brand-gradient border-r border-white/10 p-6 flex flex-col z-20 text-left text-white shadow-2xl">
         <div className="mb-12 flex items-center gap-4">
           <div className="flex items-center justify-center transition-all bg-white/5 p-2 rounded-2xl border border-white/10">
-            <img 
-              src={logoPassive || "/logo-white.png"} 
-              alt="Logo" 
-              className="h-8 md:h-10 w-auto object-contain" 
-              referrerPolicy="no-referrer"
-            />
+            {isValidImageUrl(logoPassive) && (
+              <img 
+                src={logoPassive} 
+                alt="Logo" 
+                className="h-8 md:h-10 w-auto object-contain" 
+                referrerPolicy="no-referrer"
+                onError={() => setLogoPassive('')}
+              />
+            )}
           </div>
           <span className="text-xl font-black tracking-tighter uppercase hidden sm:block">Admin</span>
         </div>

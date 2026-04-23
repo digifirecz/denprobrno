@@ -181,6 +181,13 @@ const COMMUNITY_ICON_MAP: Record<string, any> = {
   Layout
 };
 
+// Helper to check if an image URL is valid
+const isValidImageUrl = (url: string | undefined | null) => {
+  if (!url) return false;
+  if (url.startsWith('/')) return false;
+  return url.startsWith('http') || url.startsWith('blob:');
+};
+
 export default function Home() {
   const containerRef = useRef<HTMLDivElement>(null);
   const fadeInUp = {
@@ -221,7 +228,7 @@ export default function Home() {
     description: 'Vše, co potřebujete vědět před návštěvou festivalu'
   });
   const [heroData, setHeroData] = useState({ 
-    imageUrl: '/hero-full-trans.png', 
+    imageUrl: '', 
     moto: 'Naším cílem je přinést do města radost, povzbuzení a naději, která má skutečný přesah',
     quote: 'Přijďte strávit den, který může něco změnit'
   });
@@ -229,6 +236,32 @@ export default function Home() {
     logoPassive: '',
     logoActive: ''
   });
+
+  // Fetch Global Settings (Logos, Title, etc.)
+  useEffect(() => {
+    return onSnapshot(doc(db, 'settings', 'global'), (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.data();
+        setGlobalSettings({
+          logoPassive: data.logoPassive || '',
+          logoActive: data.logoActive || ''
+        });
+        if (data.title) {
+          document.title = data.title;
+        }
+        if (data.faviconUrl) {
+          let link = document.querySelector("link[rel~='icon']") as HTMLLinkElement;
+          if (!link) {
+            link = document.createElement('link');
+            link.rel = 'icon';
+            document.head.appendChild(link);
+          }
+          link.href = data.faviconUrl;
+        }
+      }
+    });
+  }, []);
+
   const [introSections, setIntroSections] = useState<IntroSection[]>([]);
   const [infoItems, setInfoItems] = useState<IntroInfoItem[]>([]);
 
@@ -350,7 +383,7 @@ export default function Home() {
       if (snapshot.exists()) {
         const data = snapshot.data();
         setHeroData({
-          imageUrl: data.imageUrl || '/hero-full-trans.png',
+          imageUrl: data.imageUrl || '',
           moto: data.moto ?? 'Naším cílem je přinést do města radost, povzbuzení a naději, která má skutečný přesah',
           quote: data.quote ?? 'Přijďte strávit den, který může něco změnit'
         });
@@ -394,7 +427,7 @@ export default function Home() {
           document.head.appendChild(script);
           
           (window as any).dataLayer = (window as any).dataLayer || [];
-          function gtag() { (window as any).dataLayer.push(arguments); }
+          const gtag = (...args: any[]) => { (window as any).dataLayer.push(args); };
           gtag('js', new Date());
           gtag('config', gaId);
         }
@@ -463,21 +496,24 @@ export default function Home() {
     <div ref={containerRef} className="relative brand-gradient min-h-screen">
       {/* Navigation */}
       <nav className="fixed top-0 left-0 w-full z-50 px-6 py-6 md:py-8 pointer-events-none transition-all duration-300">
-        <div className={`max-w-7xl mx-auto flex justify-between items-center backdrop-blur-md border rounded-full px-8 py-4 shadow-2xl pointer-events-auto transition-all duration-500 ${
+        <div className={`max-w-7xl mx-auto flex justify-between items-center backdrop-blur-md border rounded-full px-8 py-3 md:py-4 min-h-[64px] md:min-h-[76px] shadow-2xl pointer-events-auto transition-all duration-500 ${
           scrolled ? 'bg-white border-black/10' : 'bg-black/10 border-white/10'
         }`}>
-            <a href="#" className="flex items-center hover:opacity-80 transition-opacity">
-            <img 
-              src={scrolled 
-                ? (globalSettings.logoActive || "/logo-blue.png") 
-                : (globalSettings.logoPassive || "/logo-white.png")
-              } 
-              alt="DEN PRO BRNO" 
-              className="h-7 md:h-9 w-auto transition-all duration-500"
-              referrerPolicy="no-referrer"
-            />
-          </a>
-          <div className="hidden md:flex items-center space-x-10">
+            {isValidImageUrl(scrolled ? globalSettings.logoActive : globalSettings.logoPassive) && (
+              <a href="#" className="flex items-center hover:opacity-80 transition-opacity">
+                <img 
+                  src={scrolled ? globalSettings.logoActive : globalSettings.logoPassive} 
+                  alt="DEN PRO BRNO" 
+                  className="h-7 md:h-9 w-auto transition-all duration-500"
+                  referrerPolicy="no-referrer"
+                  onError={() => setGlobalSettings(prev => ({ 
+                    ...prev, 
+                    [scrolled ? 'logoActive' : 'logoPassive']: '' 
+                  }))}
+                />
+              </a>
+            )}
+          <div className="hidden md:flex items-center space-x-10 ml-auto">
             {navItems.map((item) => (
               <a 
                 key={item.name} 
@@ -568,12 +604,15 @@ export default function Home() {
                   transition={{ duration: 0.8 }}
                   className="w-full max-w-5xl px-4 z-10"
                 >
-                  <img 
-                    src={heroData.imageUrl} 
-                    alt="DEN PRO BRNO - 30. května u Janáčkova divadla" 
-                    className="w-full h-auto drop-shadow-2xl rounded-sm md:rounded-xl"
-                    referrerPolicy="no-referrer"
-                  />
+                  {isValidImageUrl(heroData.imageUrl) && (
+                    <img 
+                      src={heroData.imageUrl} 
+                      alt="DEN PRO BRNO - 30. května u Janáčkova divadla" 
+                      className="w-full h-auto drop-shadow-2xl rounded-sm md:rounded-xl"
+                      referrerPolicy="no-referrer"
+                      onError={() => setHeroData(prev => ({ ...prev, imageUrl: '' }))}
+                    />
+                  )}
                 </motion.div>
                 {heroData.moto && heroData.moto.trim() !== '' && (
                   <div className="space-y-6 max-w-3xl mx-auto pt-10 md:pt-16">
@@ -588,31 +627,28 @@ export default function Home() {
 
             {/* Vision Sections */}
             <div id="vize" className="lg:col-span-12 scroll-mt-20">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 relative z-10">
                 {introSections.map((section, idx) => (
                   <motion.div 
                     key={section.id}
                     initial={{ opacity: 0, y: 20 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
+                    whileHover={{ y: -5 }}
                     transition={{ delay: idx * 0.1 }}
-                    className={`p-10 md:p-12 rounded-[2rem] space-y-6 relative group overflow-hidden shadow-2xl ${
-                      idx % 2 === 0 
-                        ? 'bg-[#B52D56] shadow-[#a01c45]/20' 
-                        : 'bg-[#4A0A21] shadow-[#3a081a]/40'
-                    }`}
+                    className={`${idx % 2 === 0 ? 'bg-black/20' : 'bg-black/40'} p-10 md:p-14 space-y-8 relative group overflow-hidden rounded-3xl border border-white/5`}
                   >
                     <div className="flex items-center gap-4">
-                      <div className={`h-px w-6 ${idx % 2 === 0 ? 'bg-brand-yellow' : 'bg-brand-teal'}`} />
-                      <p className={`text-[10px] font-black uppercase tracking-[0.4em] ${idx % 2 === 0 ? 'text-brand-yellow' : 'text-brand-teal'}`}>
+                      <div className={`h-0.5 w-8 ${idx % 2 === 0 ? 'bg-brand-yellow' : 'bg-brand-teal'}`} />
+                      <p className={`text-xs font-black uppercase tracking-[0.4em] ${idx % 2 === 0 ? 'text-brand-yellow' : 'text-brand-teal'}`}>
                         {section.tag}
                       </p>
                     </div>
                     <div className="space-y-4">
-                      <h4 className="text-xl md:text-3xl font-sans font-bold leading-[1.2] tracking-tighter text-white">
+                      <h4 className="text-2xl md:text-3xl font-sans font-bold leading-tight tracking-tighter text-white">
                         {section.title}
                       </h4>
-                      <p className="text-sm md:text-base text-white/70 leading-relaxed font-medium max-w-lg">
+                      <p className="text-lg text-white/80 leading-relaxed font-light whitespace-pre-wrap">
                         {section.description}
                       </p>
                     </div>

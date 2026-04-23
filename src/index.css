@@ -90,20 +90,34 @@
 
 /* Modal theme remains light */
 .admin-modal-content {
-  @apply !bg-white !text-slate-900 !shadow-2xl !border-none;
+  background-color: white !important;
+  color: #0f172a !important; /* slate-900 */
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+  border: none !important;
 }
-.admin-modal-content .bg-white/5,
+
+.admin-modal-content .bg-white\/5,
 .admin-modal-content .bg-slate-50 {
-  @apply !bg-slate-50;
+  background-color: #f8fafc !important; /* slate-50 */
 }
-.admin-modal-content .border-white/5,
-.admin-modal-content .border-white/10 {
-  @apply !border-slate-100;
+
+.admin-modal-content .border-white\/5,
+.admin-modal-content .border-white\/10 {
+  border-color: #f1f5f9 !important; /* slate-100 */
 }
+
 .admin-modal-content input, 
 .admin-modal-content textarea {
-  @apply !bg-slate-100 !text-slate-900 !border-slate-200 placeholder:text-slate-400;
+  background-color: #f1f5f9 !important; /* slate-100 */
+  color: #0f172a !important; /* slate-900 */
+  border-color: #e2e8f0 !important; /* slate-200 */
 }
-.admin-modal-content .text-white/40 {
-  @apply !text-slate-400;
+
+.admin-modal-content input::placeholder, 
+.admin-modal-content textarea::placeholder {
+  color: #94a3b8 !important; /* slate-400 */
+}
+
+.admin-modal-content .text-white\/40 {
+  color: #94a3b8 !important; /* slate-400 */
 }

@@ -1,10 +1,11 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './context/AuthContext';
-import Home from './pages/Home';
-import Login from './pages/Login';
-import Admin from './pages/Admin';
-import NotFound from './pages/NotFound';
+import { Toaster } from 'react-hot-toast';
+import { AuthProvider, useAuth } from './context/AuthContext.tsx';
+import Home from './pages/Home.tsx';
+import Login from './pages/Login.tsx';
+import Admin from './pages/Admin.tsx';
+import NotFound from './pages/NotFound.tsx';
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading } = useAuth();
@@ -37,6 +38,7 @@ export default function App() {
       <Router>
         <AppRoutes />
       </Router>
+      <Toaster position="bottom-right" />
     </AuthProvider>
   );
 }
