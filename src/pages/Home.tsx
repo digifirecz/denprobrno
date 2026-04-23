@@ -251,13 +251,20 @@ export default function Home() {
   });
   const [heroData, setHeroData] = useState({ 
     imageUrl: '', 
+    imageAlt: 'DEN PRO BRNO - 30. června u Janáčkova divadla',
     moto: 'Naším cílem je přinést do města radost, povzbuzení a naději, která má skutečný přesah',
     quote: 'Přijďte strávit den, který může něco změnit'
   });
   const [globalSettings, setGlobalSettings] = useState({
     logoPassive: '',
+    logoPassiveAlt: 'Logo Den pro Brno',
     logoActive: '',
-    copyright: '© 2026 DEN PRO BRNO'
+    logoActiveAlt: 'Logo Den pro Brno',
+    copyright: '© 2026 DEN PRO BRNO',
+    faviconAlt: 'Ikona webu',
+    ogImageUrl: '',
+    ogImageAlt: 'Den pro Brno - Festival',
+    primaryDomain: 'https://denprobrno.cz'
   });
 
   // Fetch Global Settings (Logos, Title, etc.)
@@ -267,8 +274,14 @@ export default function Home() {
         const data = snapshot.data();
         setGlobalSettings({
           logoPassive: data.logoPassive || '',
+          logoPassiveAlt: data.logoPassiveAlt || 'Logo Den pro Brno',
           logoActive: data.logoActive || '',
-          copyright: data.copyright || '© 2026 DEN PRO BRNO'
+          logoActiveAlt: data.logoActiveAlt || 'Logo Den pro Brno',
+          copyright: data.copyright || '© 2026 DEN PRO BRNO',
+          faviconAlt: data.faviconAlt || 'Ikona webu',
+          ogImageUrl: data.ogImageUrl || '',
+          ogImageAlt: data.ogImageAlt || 'Den pro Brno - Festival',
+          primaryDomain: data.primaryDomain || 'https://denprobrno.cz'
         });
         if (data.title) {
           document.title = data.title;
@@ -286,9 +299,58 @@ export default function Home() {
           meta.setAttribute('content', content);
         };
 
+        // Canonical URL
+        let canonical = document.querySelector("link[rel='canonical']");
+        if (!canonical) {
+          canonical = document.createElement('link');
+          canonical.setAttribute('rel', 'canonical');
+          document.head.appendChild(canonical);
+        }
+        const baseDomain = (data.primaryDomain || 'https://denprobrno.cz').replace(/\/$/, '');
+        canonical.setAttribute('href', baseDomain + window.location.pathname);
+
+        // Structured Data (JSON-LD)
+        const scriptId = 'structured-data-jsonld';
+        let script = document.getElementById(scriptId);
+        if (!script) {
+          script = document.createElement('script');
+          script.id = scriptId;
+          script.setAttribute('type', 'application/ld+json');
+          document.head.appendChild(script);
+        }
+        
+        const eventData = {
+          "@context": "https://schema.org",
+          "@type": "Event",
+          "name": data.title || "Den pro Brno",
+          "description": data.description || "Kulturně-komunitní festival pro Brno",
+          "image": data.faviconUrl || "",
+          "location": {
+            "@type": "Place",
+            "name": data.eventLocationName || "u Janáčkova divadla",
+            "address": {
+              "@type": "PostalAddress",
+              "addressLocality": data.eventCity || "Brno",
+              "addressCountry": "CZ"
+            }
+          },
+          "startDate": `${data.eventDate || '2026-05-30'}T${data.eventStartTime || '10:00:00'}+02:00`,
+          "endDate": `${data.eventDate || '2026-05-30'}T${data.eventEndTime || '22:00:00'}+02:00`,
+          "eventStatus": "https://schema.org/EventScheduled",
+          "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode"
+        };
+        script.textContent = JSON.stringify(eventData);
+
         if (data.description) updateMeta('description', data.description);
         if (data.ogTitle) updateMeta('og:title', data.ogTitle, true);
         if (data.ogDescription) updateMeta('og:description', data.ogDescription, true);
+        if (data.ogImageUrl) updateMeta('og:image', data.ogImageUrl, true);
+        
+        // Twitter Card
+        updateMeta('twitter:card', 'summary_large_image');
+        if (data.ogTitle) updateMeta('twitter:title', data.ogTitle);
+        if (data.ogDescription) updateMeta('twitter:description', data.ogDescription);
+        if (data.ogImageUrl) updateMeta('twitter:image', data.ogImageUrl);
 
         if (data.faviconUrl) {
           let link = document.querySelector("link[rel~='icon']") as HTMLLinkElement;
@@ -425,6 +487,7 @@ export default function Home() {
         const data = snapshot.data();
         setHeroData({
           imageUrl: data.imageUrl || '',
+          imageAlt: data.imageAlt || 'DEN PRO BRNO',
           moto: data.moto ?? 'Naším cílem je přinést do města radost, povzbuzení a naději, která má skutečný přesah',
           quote: data.quote ?? 'Přijďte strávit den, který může něco změnit'
         });
@@ -563,7 +626,7 @@ export default function Home() {
               <a href="#" className="flex items-center hover:opacity-80 transition-opacity">
                 <img 
                   src={scrolled ? globalSettings.logoActive : globalSettings.logoPassive} 
-                  alt="DEN PRO BRNO" 
+                  alt={scrolled ? globalSettings.logoActiveAlt : globalSettings.logoPassiveAlt} 
                   className="h-7 md:h-9 w-auto transition-all duration-500"
                   referrerPolicy="no-referrer"
                   onError={() => setGlobalSettings(prev => ({ 
@@ -667,7 +730,7 @@ export default function Home() {
                   {isValidImageUrl(heroData.imageUrl) && (
                     <img 
                       src={heroData.imageUrl} 
-                      alt="DEN PRO BRNO - 30. května u Janáčkova divadla" 
+                      alt={heroData.imageAlt} 
                       className="w-full h-auto drop-shadow-2xl rounded-sm md:rounded-xl"
                       referrerPolicy="no-referrer"
                       onError={() => setHeroData(prev => ({ ...prev, imageUrl: '' }))}
@@ -676,9 +739,9 @@ export default function Home() {
                 </motion.div>
                 {heroData.moto && heroData.moto.trim() !== '' && (
                   <div className="space-y-6 max-w-3xl mx-auto pt-10 md:pt-16">
-                    <p className="text-lg md:text-2xl font-sans font-medium tracking-tight leading-[1.3] text-center text-white/90 px-4 whitespace-pre-wrap">
+                    <h1 className="text-lg md:text-2xl font-sans font-medium tracking-tight leading-[1.3] text-center text-white/90 px-4 whitespace-pre-wrap">
                       {heroData.moto}
-                    </p>
+                    </h1>
                     <div className="h-1 w-12 bg-brand-teal/40 rounded-full mx-auto" />
                   </div>
                 )}
@@ -783,18 +846,18 @@ export default function Home() {
         <div className="absolute top-0 left-0 w-full h-1 bg-brand-teal/20" />
         <section className="max-w-6xl mx-auto px-6 relative z-10">
           <motion.div {...fadeInUp} className="mb-12 text-center">
-            <h2 className="text-[10px] font-bold uppercase tracking-[0.4em] text-brand-red mb-4">{programHeader.topTitle}</h2>
-            <h3 className="text-5xl md:text-7xl font-sans font-bold tracking-tighter mb-4 uppercase">PROGRAM</h3>
+            <p className="text-[10px] font-bold uppercase tracking-[0.4em] text-brand-red mb-4">{programHeader.topTitle}</p>
+            <h2 className="text-5xl md:text-7xl font-sans font-bold tracking-tighter mb-4 uppercase">PROGRAM</h2>
             <p className="text-sm md:text-base font-light opacity-60 tracking-wider max-w-xl mx-auto leading-relaxed">
               {programHeader.description}
             </p>
           </motion.div>
 
           <div className="mb-6 text-center relative pt-2">
-            <h4 className="text-[60px] md:text-[140px] font-sans font-bold tracking-tighter text-black/[0.03] absolute left-1/2 -translate-x-1/2 -top-4 pointer-events-none whitespace-nowrap select-none">
+            <span className="text-[60px] md:text-[140px] font-sans font-bold tracking-tighter text-black/[0.03] absolute left-1/2 -translate-x-1/2 -top-4 pointer-events-none whitespace-nowrap select-none">
               Hudba
-            </h4>
-            <h5 className="text-2xl font-bold tracking-tight relative z-10">Hudba a koncerty</h5>
+            </span>
+            <h3 className="text-2xl font-bold tracking-tight relative z-10">Hudba a koncerty</h3>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 relative z-10 mb-12 items-start">
@@ -938,10 +1001,10 @@ export default function Home() {
           </div>
 
           <div className="mb-8 text-center relative pt-2">
-            <h4 className="text-[60px] md:text-[140px] font-sans font-bold tracking-tighter text-black/[0.03] absolute left-1/2 -translate-x-1/2 -top-6 pointer-events-none whitespace-nowrap select-none">
+            <span className="text-[60px] md:text-[140px] font-sans font-bold tracking-tighter text-black/[0.03] absolute left-1/2 -translate-x-1/2 -top-6 pointer-events-none whitespace-nowrap select-none">
               Talkshow
-            </h4>
-            <h5 className="text-2xl font-sans font-bold tracking-tight relative z-10 text-black">Talkshow a diskuse</h5>
+            </span>
+            <h3 className="text-2xl font-sans font-bold tracking-tight relative z-10 text-black">Talkshow a diskuse</h3>
           </div>
 
           <div className="space-y-6 mb-12">
@@ -1041,10 +1104,10 @@ export default function Home() {
           </div>
 
           <div className="mb-6 text-center relative pt-2">
-            <h4 className="text-[60px] md:text-[140px] font-sans font-bold tracking-tighter text-black/[0.03] absolute left-1/2 -translate-x-1/2 -top-4 pointer-events-none whitespace-nowrap select-none">
+            <span className="text-[60px] md:text-[140px] font-sans font-bold tracking-tighter text-black/[0.03] absolute left-1/2 -translate-x-1/2 -top-4 pointer-events-none whitespace-nowrap select-none">
               Rodiny
-            </h4>
-            <h5 className="text-2xl font-bold tracking-tight relative z-10">Program pro děti a rodiny</h5>
+            </span>
+            <h3 className="text-2xl font-bold tracking-tight relative z-10">Program pro děti a rodiny</h3>
           </div>
 
           <div className="space-y-12 mb-12">
@@ -1122,10 +1185,10 @@ export default function Home() {
           </div>
 
           <div className="mb-6 text-center relative pt-2">
-            <h4 className="text-[60px] md:text-[140px] font-sans font-bold tracking-tighter text-black/[0.03] absolute left-1/2 -translate-x-1/2 -top-4 pointer-events-none whitespace-nowrap select-none">
+            <span className="text-[60px] md:text-[140px] font-sans font-bold tracking-tighter text-black/[0.03] absolute left-1/2 -translate-x-1/2 -top-4 pointer-events-none whitespace-nowrap select-none">
               Komunita
-            </h4>
-            <h5 className="text-2xl font-bold tracking-tight relative z-10">Prezentace organizací a zóna klidu</h5>
+            </span>
+            <h3 className="text-2xl font-bold tracking-tight relative z-10">Prezentace organizací a zóna klidu</h3>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-12 gap-6 relative z-10">
@@ -1255,8 +1318,8 @@ export default function Home() {
         <div className="absolute bottom-0 left-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -translate-x-1/2 translate-y-1/2 shadow-[0_0_100px_rgba(255,255,255,0.1)]" />
         <div className="max-w-6xl mx-auto px-6 relative z-10">
           <motion.div {...fadeInUp} className="mb-16 text-center">
-            <h2 className="text-[10px] font-bold uppercase tracking-[0.4em] text-white/50 mb-4 uppercase">{aboutHeader.subtitle}</h2>
-            <h3 className="text-5xl md:text-7xl font-sans font-bold tracking-tighter mb-8 uppercase leading-none">O festivalu</h3>
+            <p className="text-[10px] font-bold uppercase tracking-[0.4em] text-white/50 mb-4">{aboutHeader.subtitle}</p>
+            <h2 className="text-5xl md:text-7xl font-sans font-bold tracking-tighter mb-8 uppercase leading-none">O festivalu</h2>
           </motion.div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 relative z-10">
@@ -1291,8 +1354,8 @@ export default function Home() {
       <section id="info" className="bg-white text-black py-20 md:py-32 relative overflow-hidden">
         <div className="max-w-6xl mx-auto px-6 relative z-10">
           <motion.div {...fadeInUp} className="mb-12 text-center text-black">
-            <h2 className="text-[10px] font-bold uppercase tracking-[0.4em] text-brand-red mb-4">{infoHeader.topTitle}</h2>
-            <h3 className="text-5xl md:text-7xl font-sans font-bold tracking-tighter mb-4 uppercase">PRAKTICKÉ INFO</h3>
+            <p className="text-[10px] font-bold uppercase tracking-[0.4em] text-brand-red mb-4">{infoHeader.topTitle}</p>
+            <h2 className="text-5xl md:text-7xl font-sans font-bold tracking-tighter mb-4 uppercase">PRAKTICKÉ INFO</h2>
             <p className="text-sm md:text-base font-light opacity-60 tracking-wider max-w-xl mx-auto leading-relaxed">
               {infoHeader.description}
             </p>

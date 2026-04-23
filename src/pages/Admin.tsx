@@ -59,7 +59,8 @@ import {
   Calendar,
   Layout,
   FileText,
-  Upload
+  Upload,
+  Image as ImageIcon
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.tsx';
 
@@ -419,6 +420,7 @@ const isValidImageUrl = (url: string | undefined | null) => {
 const IntroManager = () => {
   const [heroData, setHeroData] = useState({ 
     imageUrl: '', 
+    imageAlt: 'DEN PRO BRNO - 30. června u Janáčkova divadla',
     moto: 'Naším cílem je přinést do města radost, povzbuzení a naději, která má skutečný přesah',
     quote: 'Přijďte strávit den, který může něco změnit'
   });
@@ -452,6 +454,7 @@ const IntroManager = () => {
         const data = snapshot.data();
         setHeroData({
           imageUrl: data.imageUrl || '',
+          imageAlt: data.imageAlt || 'DEN PRO BRNO',
           moto: data.moto ?? 'Naším cílem je přinést do města radost, povzbuzení a naději, která má skutečný přesah',
           quote: data.quote ?? 'Přijďte strávit den, který může něco změnit'
         });
@@ -663,36 +666,47 @@ const IntroManager = () => {
           <form onSubmit={handleHeroSubmit} className="space-y-8">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
               <div className="space-y-6">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Banner</label>
-                  <div className="relative group">
-                    <div className="w-full h-64 bg-brand-red rounded-3xl border-2 border-dashed border-white/20 flex items-center justify-center overflow-hidden transition-all group-hover:border-brand-teal/50">
-                      {isValidImageUrl(heroData.imageUrl) ? (
-                        <img 
-                          src={heroData.imageUrl} 
-                          alt="Hero Logo" 
-                          className="max-h-48 w-auto object-contain drop-shadow-2xl" 
-                          referrerPolicy="no-referrer" 
-                          onError={() => setHeroData(prev => ({ ...prev, imageUrl: '' }))}
+                <div className="space-y-4">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1 block">Banner</label>
+                  <div className="p-6 bg-slate-50 rounded-3xl border border-slate-200 space-y-4">
+                    <div className="relative group">
+                      <div className="w-full h-64 bg-brand-red rounded-3xl border-2 border-dashed border-white/20 flex items-center justify-center overflow-hidden transition-all group-hover:border-brand-teal/50 shadow-inner">
+                        {isValidImageUrl(heroData.imageUrl) ? (
+                          <img 
+                            src={heroData.imageUrl} 
+                            alt={heroData.imageAlt} 
+                            className="max-h-48 w-auto object-contain drop-shadow-2xl" 
+                            referrerPolicy="no-referrer" 
+                            onError={() => setHeroData(prev => ({ ...prev, imageUrl: '' }))}
+                          />
+                        ) : (
+                          <div className="flex flex-col items-center space-y-2">
+                            <Upload size={32} className="text-white/40" />
+                            <p className="text-white/60 text-xs font-bold uppercase tracking-widest">Kliknutím vložte obrázek</p>
+                          </div>
+                        )}
+                        <input 
+                          type="file" 
+                          onChange={handleFileUpload}
+                          className="absolute inset-0 opacity-0 cursor-pointer" 
+                          accept="image/*"
+                          disabled={isUploading}
                         />
-                      ) : (
-                        <div className="flex flex-col items-center space-y-2">
-                          <Upload size={32} className="text-white/40" />
-                          <p className="text-white/60 text-xs font-bold uppercase tracking-widest">Kliknutím vložte obrázek</p>
-                        </div>
-                      )}
+                        {isUploading && (
+                          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center">
+                            <Loader2 className="animate-spin text-brand-teal" size={32} />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 ml-1">Alternativní popis banneru (ALT)</label>
                       <input 
-                        type="file" 
-                        onChange={handleFileUpload}
-                        className="absolute inset-0 opacity-0 cursor-pointer" 
-                        accept="image/*"
-                        disabled={isUploading}
+                        value={heroData.imageAlt} 
+                        onChange={e => setHeroData({...heroData, imageAlt: e.target.value})} 
+                        className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 outline-none focus:border-brand-teal shadow-sm" 
+                        placeholder="Např. Logo festivalu Den pro Brno - 30. června"
                       />
-                      {isUploading && (
-                        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center">
-                          <Loader2 className="animate-spin text-brand-teal" size={32} />
-                        </div>
-                      )}
                     </div>
                   </div>
                   <p className="mt-3 text-[10px] text-slate-400 italic">
@@ -732,7 +746,7 @@ const IntroManager = () => {
                     {isValidImageUrl(heroData.imageUrl) && (
                       <img 
                         src={heroData.imageUrl} 
-                        alt="Hero" 
+                        alt={heroData.imageAlt} 
                         className="max-w-[150px] h-auto drop-shadow-2xl opacity-90" 
                         onError={() => setHeroData(prev => ({ ...prev, imageUrl: '' }))}
                       />
@@ -3974,12 +3988,24 @@ const SettingsManager = () => {
   const [siteDescription, setSiteDescription] = useState('Den pro Brno je kulturně-komunitní festival, který spojuje lidi a oslavuje naše město.');
   const [ogTitle, setOgTitle] = useState('Den pro Brno');
   const [ogDescription, setOgDescription] = useState('Kulturně-komunitní festival pro Brno');
+  const [ogImageUrl, setOgImageUrl] = useState('');
+  const [ogImageAlt, setOgImageAlt] = useState('Den pro Brno - Festival');
   const [faviconUrl, setFaviconUrl] = useState('');
+  const [faviconAlt, setFaviconAlt] = useState('Favicon');
+  const [logoPassiveAlt, setLogoPassiveAlt] = useState('Logo Passive');
+  const [logoActiveAlt, setLogoActiveAlt] = useState('Logo Active');
+  const [primaryDomain, setPrimaryDomain] = useState('https://denprobrno.cz');
   const [gaMeasurementId, setGaMeasurementId] = useState('');
   const [copyrightText, setCopyrightText] = useState('© 2026 DEN PRO BRNO');
+  const [eventDate, setEventDate] = useState('2026-05-30');
+  const [eventStartTime, setEventStartTime] = useState('10:00:00');
+  const [eventEndTime, setEventEndTime] = useState('22:00:00');
+  const [eventLocationName, setEventLocationName] = useState('u Janáčkova divadla');
+  const [eventCity, setEventCity] = useState('Brno');
   const [isUploadingPassive, setIsUploadingPassive] = useState(false);
   const [isUploadingActive, setIsUploadingActive] = useState(false);
   const [isUploadingFavicon, setIsUploadingFavicon] = useState(false);
+  const [isUploadingOg, setIsUploadingOg] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
@@ -3992,26 +4018,39 @@ const SettingsManager = () => {
         setSiteDescription(data.description || 'Den pro Brno je kulturně-komunitní festival, který spojuje lidi a oslavuje naše město.');
         setOgTitle(data.ogTitle || 'Den pro Brno');
         setOgDescription(data.ogDescription || 'Kulturně-komunitní festival pro Brno');
+        setOgImageUrl(data.ogImageUrl || '');
+        setOgImageAlt(data.ogImageAlt || 'Den pro Brno - Festival');
         setFaviconUrl(data.faviconUrl || '');
+        setFaviconAlt(data.faviconAlt || 'Ikona webu');
+        setLogoPassiveAlt(data.logoPassiveAlt || 'Logo Den pro Brno - tmavé');
+        setLogoActiveAlt(data.logoActiveAlt || 'Logo Den pro Brno - světlé');
+        setPrimaryDomain(data.primaryDomain || 'https://denprobrno.cz');
         setGaMeasurementId(data.gaMeasurementId || '');
         setCopyrightText(data.copyright || '© 2026 DEN PRO BRNO');
+        setEventDate(data.eventDate || '2026-05-30');
+        setEventStartTime(data.eventStartTime || '10:00:00');
+        setEventEndTime(data.eventEndTime || '22:00:00');
+        setEventLocationName(data.eventLocationName || 'u Janáčkova divadla');
+        setEventCity(data.eventCity || 'Brno');
       }
     });
   }, []);
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'passive' | 'active' | 'favicon') => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'passive' | 'active' | 'favicon' | 'og') => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     if (type === 'passive') setIsUploadingPassive(true);
     else if (type === 'active') setIsUploadingActive(true);
-    else setIsUploadingFavicon(true);
+    else if (type === 'favicon') setIsUploadingFavicon(true);
+    else setIsUploadingOg(true);
 
     try {
       let fileName = '';
       if (type === 'passive') fileName = 'settings/logo-passive';
       else if (type === 'active') fileName = 'settings/logo-active';
-      else fileName = 'settings/favicon';
+      else if (type === 'favicon') fileName = 'settings/favicon';
+      else fileName = 'settings/og-image';
       
       const storageRef = ref(storage, fileName);
       
@@ -4021,7 +4060,8 @@ const SettingsManager = () => {
       if (url) {
         if (type === 'passive') setLogoPassive(url);
         else if (type === 'active') setLogoActive(url);
-        else setFaviconUrl(url);
+        else if (type === 'favicon') setFaviconUrl(url);
+        else setOgImageUrl(url);
       }
     } catch (err: any) {
       console.error('Upload failed:', err);
@@ -4029,7 +4069,8 @@ const SettingsManager = () => {
     } finally {
       if (type === 'passive') setIsUploadingPassive(false);
       else if (type === 'active') setIsUploadingActive(false);
-      else setIsUploadingFavicon(false);
+      else if (type === 'favicon') setIsUploadingFavicon(false);
+      else setIsUploadingOg(false);
     }
   };
 
@@ -4043,9 +4084,20 @@ const SettingsManager = () => {
         description: siteDescription,
         ogTitle,
         ogDescription,
+        ogImageUrl,
+        ogImageAlt,
         faviconUrl,
+        faviconAlt,
+        logoPassiveAlt,
+        logoActiveAlt,
+        primaryDomain,
         gaMeasurementId,
         copyright: copyrightText,
+        eventDate,
+        eventStartTime,
+        eventEndTime,
+        eventLocationName,
+        eventCity,
         updatedAt: serverTimestamp()
       }, { merge: true });
       toast.success('Nastavení bylo úspěšně upraveno!');
@@ -4113,6 +4165,53 @@ const SettingsManager = () => {
               />
             </div>
           </div>
+          
+          <div className="space-y-4">
+            <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Náhledový obrázek pro sociální sítě (OG Image)</label>
+            <div className="p-6 bg-slate-50 rounded-2xl border border-slate-200 space-y-4">
+              <div className="flex items-center gap-6">
+                <div className="w-40 h-24 bg-white rounded-xl border border-dashed border-slate-200 flex items-center justify-center overflow-hidden shadow-inner">
+                  {isValidImageUrl(ogImageUrl) ? (
+                    <img 
+                      src={ogImageUrl} 
+                      alt={ogImageAlt} 
+                      className="max-h-full max-w-full object-cover" 
+                      onError={() => setOgImageUrl('')}
+                    />                
+                  ) : (
+                    <div className="flex flex-col items-center gap-1 text-slate-300">
+                      <ImageIcon size={24} />
+                      <span className="text-[8px] font-bold uppercase">1200x630px</span>
+                    </div>
+                  )}
+                </div>
+                <div className="flex-1 space-y-3">
+                  <input type="file" onChange={e => handleFileUpload(e, 'og')} className="text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:bg-brand-teal file:text-black hover:file:bg-brand-teal-light cursor-pointer" accept="image/*" />
+                  <p className="text-[9px] text-slate-400">Doporučený rozměr je 1200x630 pixelů pro optimální zobrazení na Facebooku a Instagramu.</p>
+                </div>
+                {isUploadingOg && <Loader2 className="animate-spin text-brand-teal" size={24} />}
+              </div>
+              <div className="space-y-1">
+                <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 ml-1">ALT text pro náhledový obrázek</label>
+                <input 
+                  value={ogImageAlt} 
+                  onChange={e => setOgImageAlt(e.target.value)} 
+                  className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2 text-sm text-slate-900 outline-none focus:border-brand-teal" 
+                  placeholder="Popis obrázku pro sociální sítě..."
+                />
+              </div>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Primární doména (vč. https://)</label>
+            <input 
+              value={primaryDomain} 
+              onChange={e => setPrimaryDomain(e.target.value)} 
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all font-mono text-xs" 
+              placeholder="https://denprobrno.cz"
+            />
+            <p className="text-[10px] text-slate-400 italic ml-1">Klíčové pro SEO. Zde uveďte doménu, na které web finálně poběží.</p>
+          </div>
           <div className="space-y-2">
             <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Google Analytics Measurement ID (např. G-XXXXXXXXXX)</label>
             <input value={gaMeasurementId} onChange={e => setGaMeasurementId(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all" />
@@ -4121,23 +4220,62 @@ const SettingsManager = () => {
             <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Copyright</label>
             <input value={copyrightText} onChange={e => setCopyrightText(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all" placeholder="Např. © 2026 DEN PRO BRNO" />
           </div>
-          <div className="space-y-2">
-            <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Ikona v prohlížeči (Favicon)</label>
-            <div className="flex items-center gap-4">
-              <div className="w-16 h-16 bg-slate-50 rounded-xl border border-dashed border-slate-200 flex items-center justify-center overflow-hidden">
-                {isValidImageUrl(faviconUrl) ? (
-                  <img 
-                    src={faviconUrl} 
-                    alt="Favicon" 
-                    className="max-h-10 max-w-10" 
-                    onError={() => setFaviconUrl('')}
-                  />                
-                ) : (
-                  <Upload size={20} className="text-slate-300" />
-                )}
+
+          <div className="pt-6 border-t border-slate-100 space-y-6">
+            <h4 className="text-sm font-black uppercase tracking-widest text-slate-900">SEO: Informace o události (Schema.org)</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Datum události</label>
+                <input type="date" value={eventDate} onChange={e => setEventDate(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all" />
               </div>
-              <input type="file" onChange={e => handleFileUpload(e, 'favicon')} className="text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:bg-brand-teal file:text-black hover:file:bg-brand-teal-light" accept="image/x-icon,image/png,image/svg+xml" />
-              {isUploadingFavicon && <Loader2 className="animate-spin text-brand-teal" size={24} />}
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Čas zahájení</label>
+                <input type="time" step="1" value={eventStartTime} onChange={e => setEventStartTime(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all" />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Čas konce</label>
+                <input type="time" step="1" value={eventEndTime} onChange={e => setEventEndTime(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all" />
+              </div>
+              <div className="space-y-2 lg:col-span-2">
+                <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Místo konání (např. u Janáčkova divadla)</label>
+                <input value={eventLocationName} onChange={e => setEventLocationName(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all" />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Město</label>
+                <input value={eventCity} onChange={e => setEventCity(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all" />
+              </div>
+            </div>
+            <p className="text-[10px] text-slate-400 italic font-medium">Tyto údaje pomáhají Googlu zobrazit web jako událost s datem a místem přímo ve výsledcích vyhledávání.</p>
+          </div>
+
+          <div className="space-y-4">
+            <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Ikona v prohlížeči (Favicon)</label>
+            <div className="p-6 bg-slate-50 rounded-2xl border border-slate-200 space-y-4">
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 bg-white rounded-xl border border-dashed border-slate-200 flex items-center justify-center overflow-hidden">
+                  {isValidImageUrl(faviconUrl) ? (
+                    <img 
+                      src={faviconUrl} 
+                      alt={faviconAlt} 
+                      className="max-h-10 max-w-10" 
+                      onError={() => setFaviconUrl('')}
+                    />                
+                  ) : (
+                    <Upload size={20} className="text-slate-300" />
+                  )}
+                </div>
+                <input type="file" onChange={e => handleFileUpload(e, 'favicon')} className="text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:bg-brand-teal file:text-black hover:file:bg-brand-teal-light" accept="image/x-icon,image/png,image/svg+xml" />
+                {isUploadingFavicon && <Loader2 className="animate-spin text-brand-teal" size={24} />}
+              </div>
+              <div className="space-y-1">
+                <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 ml-1">Alternativní popis ikony (pro vyhledávače)</label>
+                <input 
+                  value={faviconAlt} 
+                  onChange={e => setFaviconAlt(e.target.value)} 
+                  className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2 text-sm text-slate-900 outline-none focus:border-brand-teal" 
+                  placeholder="Např. Ikona festivalu Den pro Brno"
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -4147,16 +4285,15 @@ const SettingsManager = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-          {/* Passive Logo */}
-          <div className="space-y-6">
-            <div className="text-left">
-              <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-4 block">Pasivní Logo</label>
+          <div className="space-y-4">
+            <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2 block ml-1">Pasivní Logo</label>
+            <div className="p-6 bg-slate-50 rounded-[2.5rem] border border-slate-200 space-y-6 transition-all hover:border-brand-teal/30">
               <div className="relative group">
-                <div className="w-full h-48 bg-brand-red rounded-3xl border-2 border-dashed border-white/20 flex items-center justify-center overflow-hidden transition-all group-hover:border-brand-teal/50">
+                <div className="w-full h-48 bg-brand-red rounded-3xl border-2 border-dashed border-white/20 flex items-center justify-center overflow-hidden transition-all group-hover:border-brand-teal/50 shadow-inner">
                   {isValidImageUrl(logoPassive) ? (
                     <img 
                       src={logoPassive} 
-                      alt="Passive Logo" 
+                      alt={logoPassiveAlt} 
                       className="max-h-24 w-auto object-contain" 
                       referrerPolicy="no-referrer" 
                       onError={() => setLogoPassive('')}
@@ -4180,22 +4317,28 @@ const SettingsManager = () => {
                   )}
                 </div>
               </div>
-              <p className="mt-3 text-[10px] text-slate-400 italic">
-                {isValidImageUrl(logoPassive) ? 'Vlastní logo' : 'Žádné logo (nebude zobrazeno)'}
-              </p>
+              <div className="space-y-1">
+                <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 ml-1">Alternativní popis (ALT)</label>
+                <input 
+                  value={logoPassiveAlt} 
+                  onChange={e => setLogoPassiveAlt(e.target.value)} 
+                  className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 outline-none focus:border-brand-teal shadow-sm" 
+                  placeholder="Např. Logo Den pro Brno pro červené pozadí"
+                />
+              </div>
             </div>
           </div>
 
           {/* Active Logo */}
-          <div className="space-y-6">
-            <div className="text-left">
-              <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-4 block">Aktivní Logo</label>
+          <div className="space-y-4">
+            <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2 block ml-1">Aktivní Logo</label>
+            <div className="p-6 bg-slate-50 rounded-[2.5rem] border border-slate-200 space-y-6 transition-all hover:border-brand-teal/30">
               <div className="relative group">
-                <div className="w-full h-48 bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200 flex items-center justify-center overflow-hidden transition-all group-hover:border-brand-teal/50">
+                <div className="w-full h-48 bg-white rounded-3xl border-2 border-dashed border-slate-200 flex items-center justify-center overflow-hidden transition-all group-hover:border-brand-teal/50 shadow-inner">
                   {isValidImageUrl(logoActive) ? (
                     <img 
                       src={logoActive} 
-                      alt="Active Logo" 
+                      alt={logoActiveAlt} 
                       className="max-h-24 w-auto object-contain" 
                       referrerPolicy="no-referrer" 
                       onError={() => setLogoActive('')}
@@ -4219,9 +4362,15 @@ const SettingsManager = () => {
                   )}
                 </div>
               </div>
-              <p className="mt-3 text-[10px] text-slate-400 italic">
-                {isValidImageUrl(logoActive) ? 'Vlastní logo' : 'Žádné logo (nebude zobrazeno)'}
-              </p>
+              <div className="space-y-1">
+                <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 ml-1">Alternativní popis (ALT)</label>
+                <input 
+                  value={logoActiveAlt} 
+                  onChange={e => setLogoActiveAlt(e.target.value)} 
+                  className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 outline-none focus:border-brand-teal shadow-sm" 
+                  placeholder="Např. Tmavé logo Den pro Brno pro bílé pozadí"
+                />
+              </div>
             </div>
           </div>
         </div>
