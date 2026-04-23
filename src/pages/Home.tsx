@@ -219,6 +219,28 @@ export default function Home() {
   const [contactForm, setContactForm] = useState({ name: '', email: '', message: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [isAppLoading, setIsAppLoading] = useState(true);
+  const [dataReady, setDataReady] = useState(false);
+
+  // Loading sequence
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDataReady(true);
+    }, 50); // 0.05s (50ms) flash - extremely fast to just cover initials
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  // When data is ready, finish loading
+  useEffect(() => {
+    if (dataReady) {
+      const fadeTimeout = setTimeout(() => {
+        setIsAppLoading(false);
+      }, 500);
+      return () => clearTimeout(fadeTimeout);
+    }
+  }, [dataReady]);
+
   const [programHeader, setProgramHeader] = useState<ProgramHeader>({
     topTitle: 'Lineup 2026',
     description: 'Po celý den bude probíhat několik typů programu, mezi kterými si každý najde to své'
@@ -249,6 +271,23 @@ export default function Home() {
         if (data.title) {
           document.title = data.title;
         }
+        
+        // Dynamic Meta Tags
+        const updateMeta = (name: string, content: string, isProperty = false) => {
+          let meta = document.querySelector(isProperty ? `meta[property='${name}']` : `meta[name='${name}']`);
+          if (!meta) {
+            meta = document.createElement('meta');
+            if (isProperty) meta.setAttribute('property', name);
+            else meta.setAttribute('name', name);
+            document.head.appendChild(meta);
+          }
+          meta.setAttribute('content', content);
+        };
+
+        if (data.description) updateMeta('description', data.description);
+        if (data.ogTitle) updateMeta('og:title', data.ogTitle, true);
+        if (data.ogDescription) updateMeta('og:description', data.ogDescription, true);
+
         if (data.faviconUrl) {
           let link = document.querySelector("link[rel~='icon']") as HTMLLinkElement;
           if (!link) {
@@ -493,8 +532,27 @@ export default function Home() {
   }, []);
 
   return (
-    <div ref={containerRef} className="relative brand-gradient min-h-screen">
-      {/* Navigation */}
+    <>
+      <AnimatePresence mode="wait">
+        {isAppLoading && (
+          <motion.div
+            key="splash"
+            initial={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.5, ease: "linear" }}
+            className="fixed inset-0 z-[9999] bg-brand-red flex items-center justify-center overflow-hidden"
+          />
+        )}
+      </AnimatePresence>
+
+      <motion.div 
+        ref={containerRef} 
+        className="relative brand-gradient min-h-screen"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: isAppLoading ? 0 : 1 }}
+        transition={{ duration: 1 }}
+      >
+        {/* Navigation */}
       <nav className="fixed top-0 left-0 w-full z-50 px-6 py-6 md:py-8 pointer-events-none transition-all duration-300">
         <div className={`max-w-7xl mx-auto flex justify-between items-center backdrop-blur-md border rounded-full px-8 py-3 md:py-4 min-h-[64px] md:min-h-[76px] shadow-2xl pointer-events-auto transition-all duration-500 ${
           scrolled ? 'bg-white border-black/10' : 'bg-black/10 border-white/10'
@@ -594,8 +652,8 @@ export default function Home() {
 
       <section id="uvod" className="text-white pt-36 pb-16 relative overflow-hidden">
         <div className="max-w-6xl mx-auto px-6 relative z-10">
-          <motion.div {...fadeInUp} className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
-            <div className="lg:col-span-12 mb-10 text-center">
+          <motion.div {...fadeInUp} className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            <div className="lg:col-span-12 text-center">
               <div className="flex flex-col items-center justify-center">
                 <motion.div
                   initial={{ opacity: 0, scale: 0.98 }}
@@ -638,12 +696,14 @@ export default function Home() {
                     transition={{ delay: idx * 0.1 }}
                     className={`${idx % 2 === 0 ? 'bg-black/20' : 'bg-black/40'} p-10 md:p-14 space-y-8 relative group overflow-hidden rounded-3xl border border-white/5`}
                   >
-                    <div className="flex items-center gap-4">
-                      <div className={`h-0.5 w-8 ${idx % 2 === 0 ? 'bg-brand-yellow' : 'bg-brand-teal'}`} />
-                      <p className={`text-xs font-black uppercase tracking-[0.4em] ${idx % 2 === 0 ? 'text-brand-yellow' : 'text-brand-teal'}`}>
-                        {section.tag}
-                      </p>
-                    </div>
+                    {section.tag && section.tag.trim() !== '' && (
+                      <div className="flex items-center gap-4">
+                        <div className={`h-0.5 w-8 ${idx % 2 === 0 ? 'bg-brand-yellow' : 'bg-brand-teal'}`} />
+                        <p className={`text-xs font-black uppercase tracking-[0.4em] ${idx % 2 === 0 ? 'text-brand-yellow' : 'text-brand-teal'}`}>
+                          {section.tag}
+                        </p>
+                      </div>
+                    )}
                     <div className="space-y-4">
                       <h4 className="text-2xl md:text-3xl font-sans font-bold leading-tight tracking-tighter text-white">
                         {section.title}
@@ -659,14 +719,14 @@ export default function Home() {
 
             {/* Dynamic Info Bar */}
             {infoItems.length > 0 && (
-              <div className="lg:col-span-12 -mt-6 lg:-mt-8 mb-8 relative z-20">
+              <div className="lg:col-span-12 relative z-20">
                 <motion.div 
                   initial={{ opacity: 0, y: 30 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   className="bg-[#7A1235] px-8 py-8 md:px-12 md:py-10 rounded-[2rem] shadow-2xl relative border border-white/5 overflow-hidden"
                 >
-                  <div className="relative flex flex-col md:flex-row flex-wrap gap-8 md:gap-16 items-start justify-start">
+                  <div className="relative flex flex-col md:flex-row flex-wrap gap-8 md:gap-16 items-start justify-start text-left">
                     {infoItems.map((item, idx) => (
                       <React.Fragment key={item.id}>
                         <div className="space-y-2 max-w-xs">
@@ -694,6 +754,8 @@ export default function Home() {
               </div>
             )}
 
+            {/* Intro end */}
+            
             {heroData.quote && heroData.quote.trim() !== '' && (
               <div className="lg:col-span-12 mt-2 mb-2 flex flex-col items-center">
                 <motion.div
@@ -1402,6 +1464,7 @@ export default function Home() {
           </div>
         </div>
       </footer>
-    </div>
+    </motion.div>
+    </>
   );
 }

@@ -549,6 +549,14 @@ const IntroManager = () => {
         updatedAt: serverTimestamp()
       };
 
+      if (editingSection) {
+        await updateDoc(doc(db, 'introSections', editingSection.id), data);
+      } else {
+        await addDoc(collection(db, 'introSections'), {
+          ...data,
+          createdAt: serverTimestamp()
+        });
+      }
       
       toast.success(editingSection ? 'Úspěšně upraveno!' : 'Úspěšně vytvořeno!');
       setIsModalOpen(false);
@@ -802,12 +810,14 @@ const IntroManager = () => {
                     key={section.id}
                     className={`${idx % 2 === 0 ? 'bg-black/20' : 'bg-black/40'} p-10 md:p-14 space-y-8 relative group overflow-hidden rounded-3xl border border-white/5 shadow-2xl text-left`}
                   >
-                    <div className="flex items-center gap-4">
-                      <div className={`h-0.5 w-8 ${idx % 2 === 0 ? 'bg-brand-yellow' : 'bg-brand-teal'}`} />
-                      <p className={`text-xs font-black uppercase tracking-[0.4em] ${idx % 2 === 0 ? 'text-brand-yellow' : 'text-brand-teal'}`}>
-                        {section.tag}
-                      </p>
-                    </div>
+                    {section.tag && section.tag.trim() !== '' && (
+                      <div className="flex items-center gap-4">
+                        <div className={`h-0.5 w-8 ${idx % 2 === 0 ? 'bg-brand-yellow' : 'bg-brand-teal'}`} />
+                        <p className={`text-xs font-black uppercase tracking-[0.4em] ${idx % 2 === 0 ? 'text-brand-yellow' : 'text-brand-teal'}`}>
+                          {section.tag}
+                        </p>
+                      </div>
+                    )}
                     <div className="space-y-4">
                       <h4 className="text-2xl md:text-3xl font-sans font-bold leading-tight tracking-tighter text-white whitespace-pre-wrap">
                         {section.title}
@@ -3484,6 +3494,15 @@ const AboutManager = () => {
     setIsSubmitting(true);
     try {
       const data = { ...formData, updatedAt: serverTimestamp() };
+
+      if (editingSection) {
+        await updateDoc(doc(db, 'aboutSections', editingSection.id), data);
+      } else {
+        await addDoc(collection(db, 'aboutSections'), {
+          ...data,
+          createdAt: serverTimestamp()
+        });
+      }
       
       toast.success(editingSection ? 'Úspěšně upraveno!' : 'Úspěšně vytvořeno!');
       setIsModalOpen(false);
@@ -3952,6 +3971,9 @@ const SettingsManager = () => {
   const [logoPassive, setLogoPassive] = useState('');
   const [logoActive, setLogoActive] = useState('');
   const [siteTitle, setSiteTitle] = useState('Den pro Brno');
+  const [siteDescription, setSiteDescription] = useState('Den pro Brno je kulturně-komunitní festival, který spojuje lidi a oslavuje naše město.');
+  const [ogTitle, setOgTitle] = useState('Den pro Brno');
+  const [ogDescription, setOgDescription] = useState('Kulturně-komunitní festival pro Brno');
   const [faviconUrl, setFaviconUrl] = useState('');
   const [gaMeasurementId, setGaMeasurementId] = useState('');
   const [isUploadingPassive, setIsUploadingPassive] = useState(false);
@@ -3966,6 +3988,9 @@ const SettingsManager = () => {
         setLogoPassive(data.logoPassive || '');
         setLogoActive(data.logoActive || '');
         setSiteTitle(data.title || 'Den pro Brno');
+        setSiteDescription(data.description || 'Den pro Brno je kulturně-komunitní festival, který spojuje lidi a oslavuje naše město.');
+        setOgTitle(data.ogTitle || 'Den pro Brno');
+        setOgDescription(data.ogDescription || 'Kulturně-komunitní festival pro Brno');
         setFaviconUrl(data.faviconUrl || '');
         setGaMeasurementId(data.gaMeasurementId || '');
       }
@@ -4013,6 +4038,9 @@ const SettingsManager = () => {
         logoPassive,
         logoActive,
         title: siteTitle,
+        description: siteDescription,
+        ogTitle,
+        ogDescription,
         faviconUrl,
         gaMeasurementId,
         updatedAt: serverTimestamp()
@@ -4049,6 +4077,38 @@ const SettingsManager = () => {
           <div className="space-y-2">
             <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Titulek stránky v prohlížeči</label>
             <input value={siteTitle} onChange={e => setSiteTitle(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all" />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Popis stránek (Meta Description)</label>
+            <textarea 
+              rows={3} 
+              value={siteDescription} 
+              onChange={e => setSiteDescription(e.target.value)} 
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none resize-none transition-all" 
+              placeholder="Krátký popis pro vyhledávače..."
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Titulek pro sociální sítě (OG Title)</label>
+              <input 
+                value={ogTitle} 
+                onChange={e => setOgTitle(e.target.value)} 
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all" 
+                placeholder="Zobrazí se při sdílení na FB/IG..."
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Popis pro sociální sítě (OG Description)</label>
+              <input 
+                value={ogDescription} 
+                onChange={e => setOgDescription(e.target.value)} 
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all" 
+                placeholder="Krátký text pod titulkem při sdílení..."
+              />
+            </div>
           </div>
           <div className="space-y-2">
             <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Google Analytics Measurement ID (např. G-XXXXXXXXXX)</label>
