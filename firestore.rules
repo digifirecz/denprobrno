@@ -172,11 +172,26 @@ service cloud.firestore {
              (!('updatedAt' in data) || data.updatedAt is timestamp);
     }
 
+    function isValidFestivalList(data) {
+      return data.keys().hasAll(['title']) &&
+             data.title is string && data.title.size() <= 200 &&
+             (!('items' in data) || data.items is list) &&
+             (!('order' in data) || data.order is number) &&
+             (!('createdAt' in data) || data.createdAt is timestamp) &&
+             (!('updatedAt' in data) || data.updatedAt is timestamp);
+    }
+
     // --- Match Rules ---
 
     match /aboutSections/{id} {
       allow read: if true;
       allow create, update: if isSignedIn() && isValidAboutSection(incoming());
+      allow delete: if isSignedIn();
+    }
+
+    match /festivalLists/{id} {
+      allow read: if true;
+      allow create, update: if isSignedIn() && isValidFestivalList(incoming());
       allow delete: if isSignedIn();
     }
 

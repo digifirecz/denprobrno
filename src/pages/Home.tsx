@@ -30,7 +30,8 @@ import {
   Zap,
   Coffee,
   Rocket,
-  Palette
+  Palette,
+  ExternalLink
 } from 'lucide-react';
 
 import React from 'react';
@@ -55,6 +56,7 @@ interface PracticalInfo {
 interface Guest {
   name: string;
   role: string;
+  imageUrl?: string;
 }
 
 interface Talkshow {
@@ -64,8 +66,10 @@ interface Talkshow {
   guests: Guest[];
   moderatorName: string;
   moderatorRole: string;
+  moderatorImage?: string;
   closingWordName?: string;
   closingWordRole?: string;
+  closingWordImage?: string;
   desc: string;
   order: number;
   icon?: string;
@@ -119,6 +123,8 @@ interface AboutSection {
   tag: string;
   title: string;
   description: string;
+  size?: 'small' | 'large';
+  items?: { name: string; description: string; link?: string; image?: string }[];
   order: number;
 }
 
@@ -344,6 +350,13 @@ export default function Home() {
         if (data.description) updateMeta('description', data.description);
         if (data.ogTitle) updateMeta('og:title', data.ogTitle, true);
         if (data.ogDescription) updateMeta('og:description', data.ogDescription, true);
+        if (data.ogImageUrl) updateMeta('og:image', data.ogImageUrl, true);
+        
+        // Twitter Card
+        updateMeta('twitter:card', 'summary_large_image');
+        if (data.ogTitle) updateMeta('twitter:title', data.ogTitle);
+        if (data.ogDescription) updateMeta('twitter:description', data.ogDescription);
+        if (data.ogImageUrl) updateMeta('twitter:image', data.ogImageUrl);
         if (data.ogImageUrl) updateMeta('og:image', data.ogImageUrl, true);
         
         // Twitter Card
@@ -739,10 +752,9 @@ export default function Home() {
                 </motion.div>
                 {heroData.moto && heroData.moto.trim() !== '' && (
                   <div className="space-y-6 max-w-3xl mx-auto pt-10 md:pt-16">
-                    <h1 className="text-lg md:text-2xl font-sans font-medium tracking-tight leading-[1.3] text-center text-white/90 px-4 whitespace-pre-wrap">
+                    <h1 className="text-lg md:text-2xl font-sans font-medium tracking-tight leading-[1.3] text-center text-white/90 px-4 mb-[80px] pl-[18px] whitespace-pre-wrap">
                       {heroData.moto}
                     </h1>
-                    <div className="h-1 w-12 bg-brand-teal/40 rounded-full mx-auto" />
                   </div>
                 )}
               </div>
@@ -830,11 +842,9 @@ export default function Home() {
                   transition={{ duration: 1 }}
                   className="max-w-2xl text-center space-y-4"
                 >
-                  <div className="h-px w-12 bg-white/20 mx-auto" />
-                  <p className="text-lg md:text-2xl font-sans font-medium tracking-tight leading-[1.3] text-white whitespace-pre-wrap">
+                  <p className="text-lg md:text-2xl font-sans font-medium tracking-tight leading-[1.3] text-white whitespace-pre-wrap mt-[50px]">
                     {heroData.quote}
                   </p>
-                  <div className="h-px w-12 bg-white/20 mx-auto" />
                 </motion.div>
               </div>
             )}
@@ -1053,6 +1063,11 @@ export default function Home() {
                                 {item.guests?.map((guest, gi) => (
                                   (guest.name || guest.role) && (
                                     <div key={gi} className="group">
+                                      {guest.imageUrl && (
+                                        <div className="w-14 h-14 rounded-full overflow-hidden mb-4 bg-white/10 border border-white/10 shrink-0">
+                                          <img src={guest.imageUrl} alt={guest.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                                        </div>
+                                      )}
                                       {guest.name && <p className="text-xl font-bold tracking-tight text-white">{guest.name}</p>}
                                       {guest.role && <p className="text-sm text-white/50 font-medium">{guest.role}</p>}
                                     </div>
@@ -1069,8 +1084,14 @@ export default function Home() {
                                 <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/40 mb-3">Moderuje</p>
                                 {item.moderatorName && <p className="text-xl font-bold tracking-tight text-white mb-0.5">{item.moderatorName}</p>}
                                 {item.moderatorRole && <p className="text-sm text-white/50 font-medium">{item.moderatorRole}</p>}
-                                <div className="absolute right-6 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/5 rounded-full flex items-center justify-center text-white/20">
-                                  <Users size={24} />
+                                <div className="absolute right-6 top-1/2 -translate-y-1/2 w-14 h-14 rounded-full overflow-hidden border border-white/10 shrink-0 bg-white/5">
+                                  {item.moderatorImage ? (
+                                    <img src={item.moderatorImage} alt={item.moderatorName} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                                  ) : (
+                                    <div className="w-full h-full flex items-center justify-center text-white/20">
+                                      <Users size={24} />
+                                    </div>
+                                  )}
                                 </div>
                               </div>
                             </div>
@@ -1081,8 +1102,12 @@ export default function Home() {
                       {/* Závěrečné slovo */}
                       {item.closingWordName && (
                         <div className="flex items-start gap-4 text-white pt-2">
-                          <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center text-white text-xs font-black tracking-widest shrink-0 shadow-lg mt-1">
-                            {item.closingWordName.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2)}
+                          <div className="w-14 h-14 rounded-full bg-white/20 overflow-hidden flex items-center justify-center text-white text-xs font-black tracking-widest shrink-0 shadow-lg mt-1 border border-white/10">
+                            {item.closingWordImage ? (
+                              <img src={item.closingWordImage} alt={item.closingWordName} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                            ) : (
+                              item.closingWordName.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2)
+                            )}
                           </div>
                           <div className="text-left">
                             <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/40 mb-3 leading-none">Závěrečné slovo</p>
@@ -1322,30 +1347,81 @@ export default function Home() {
             <h2 className="text-5xl md:text-7xl font-sans font-bold tracking-tighter mb-8 uppercase leading-none">O festivalu</h2>
           </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 relative z-10">
+          <div className="flex flex-col gap-8 relative z-10">
             {aboutSections.length === 0 ? (
               <div className="col-span-full py-20 text-center border-2 border-dashed border-white/10 rounded-3xl opacity-30 w-full">
                 <p className="text-xs font-bold uppercase tracking-widest text-white">Informace o festivalu připravujeme</p>
               </div>
             ) : (
-              aboutSections.map((section, idx) => (
-                <motion.div 
-                  key={section.id}
-                  whileHover={{ y: -5 }}
-                  className={`${idx % 2 === 0 ? 'bg-black/20' : 'bg-black/40'} p-10 md:p-14 space-y-8 relative group overflow-hidden rounded-3xl border border-white/5`}
-                >
-                  <div className="flex items-center gap-4">
-                    <div className={`h-0.5 w-8 ${idx % 2 === 0 ? 'bg-brand-yellow' : 'bg-brand-teal'}`} />
-                    <p className={`text-xs font-black uppercase tracking-[0.4em] ${idx % 2 === 0 ? 'text-brand-yellow' : 'text-brand-teal'}`}>{section.tag}</p>
-                  </div>
-                  <p className="text-2xl md:text-3xl font-sans font-bold leading-tight tracking-tighter">
-                    {section.title}
-                  </p>
-                  <p className="text-lg text-white/80 leading-relaxed font-light whitespace-pre-wrap">
-                    {section.description}
-                  </p>
-                </motion.div>
-              ))
+              <>
+                {aboutSections.map((section, idx) => {
+                  const isLarge = section.size === 'large';
+                  const tagColorClass = isLarge ? 'text-brand-teal' : 'text-brand-yellow';
+                  const barColorClass = isLarge ? 'bg-brand-teal' : 'bg-brand-yellow';
+                  const bgClass = isLarge ? 'bg-[#4a0a0a]' : (idx % 2 === 0 ? 'bg-black/20' : 'bg-black/40');
+
+                  return (
+                    <motion.div 
+                      key={section.id}
+                      whileHover={{ y: -5 }}
+                      className={`${bgClass} ${isLarge ? 'p-12 md:p-20' : 'p-10 md:p-14'} space-y-8 relative group overflow-hidden rounded-[2rem] md:rounded-[3rem] border border-white/5 transition-all duration-500`}
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className={`h-0.5 w-8 ${barColorClass}`} />
+                        <p className={`text-xs font-black uppercase tracking-[0.4em] ${tagColorClass}`}>{section.tag}</p>
+                      </div>
+                      <p className={`${isLarge ? 'text-3xl md:text-5xl' : 'text-2xl md:text-3xl'} font-sans font-bold leading-tight tracking-tighter whitespace-pre-wrap`}>
+                        {section.title}
+                      </p>
+                      <p className={`${isLarge ? 'text-xl' : 'text-lg'} text-white/80 leading-relaxed font-light whitespace-pre-wrap max-w-5xl`}>
+                        {section.description}
+                      </p>
+
+                      {section.items && section.items.length > 0 && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 pt-8 border-t border-white/10">
+                          {section.items.map((item, i) => (
+                            <div key={i} className="space-y-2">
+                              {item.link ? (
+                                <a 
+                                  href={item.link.startsWith('http') ? item.link : `https://${item.link}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="group/item flex gap-6 text-left items-start"
+                                >
+                                  {item.image && (
+                                    <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white bg-white group-hover/item:border-brand-teal transition-colors shrink-0 p-1.5 flex items-center justify-center">
+                                      <img src={item.image} className="w-full h-full object-contain transition-all duration-500" alt={item.name} referrerPolicy="no-referrer" />
+                                    </div>
+                                  )}
+                                  <div className="space-y-2 flex-1">
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-xl font-bold text-white group-hover/item:text-brand-teal transition-colors tracking-tight">{item.name}</span>
+                                      <ExternalLink size={14} className="opacity-0 group-hover/item:opacity-100 transition-opacity text-brand-teal" />
+                                    </div>
+                                    {item.description && <p className="text-sm text-white/70 leading-relaxed font-light whitespace-pre-wrap">{item.description}</p>}
+                                  </div>
+                                </a>
+                              ) : (
+                                <div className="flex gap-6 text-left items-start">
+                                  {item.image && (
+                                    <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white bg-white shrink-0 p-1.5 flex items-center justify-center">
+                                      <img src={item.image} className="w-full h-full object-contain transition-all duration-500" alt={item.name} referrerPolicy="no-referrer" />
+                                    </div>
+                                  )}
+                                  <div className="space-y-2 flex-1">
+                                    <span className="text-xl font-bold text-white tracking-tight">{item.name}</span>
+                                    {item.description && <p className="text-sm text-white/70 leading-relaxed font-light whitespace-pre-wrap">{item.description}</p>}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </motion.div>
+                  );
+                })}
+              </>
             )}
           </div>
         </div>

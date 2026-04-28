@@ -37,7 +37,6 @@ import {
   Youtube,
   Type,
   Palette,
-  AlignLeft,
   Loader2,
   Star,
   User,
@@ -60,9 +59,58 @@ import {
   Layout,
   FileText,
   Upload,
+  ExternalLink,
   Image as ImageIcon
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.tsx';
+
+enum OperationType {
+  CREATE = 'create',
+  UPDATE = 'update',
+  DELETE = 'delete',
+  LIST = 'list',
+  GET = 'get',
+  WRITE = 'write',
+}
+
+interface FirestoreErrorInfo {
+  error: string;
+  operationType: OperationType;
+  path: string | null;
+  authInfo: {
+    userId?: string | null;
+    email?: string | null;
+    emailVerified?: boolean | null;
+    isAnonymous?: boolean | null;
+    tenantId?: string | null;
+    providerInfo?: {
+      providerId?: string | null;
+      email?: string | null;
+    }[];
+  }
+}
+
+function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
+  const errInfo: FirestoreErrorInfo = {
+    error: error instanceof Error ? error.message : String(error),
+    authInfo: {
+      userId: auth.currentUser?.uid,
+      email: auth.currentUser?.email,
+      emailVerified: auth.currentUser?.emailVerified,
+      isAnonymous: auth.currentUser?.isAnonymous,
+      tenantId: auth.currentUser?.tenantId,
+      providerInfo: auth.currentUser?.providerData?.map(provider => ({
+        providerId: provider.providerId,
+        email: provider.email,
+      })) || []
+    },
+    operationType,
+    path
+  }
+  console.error('Firestore Error: ', JSON.stringify(errInfo));
+  toast.error(`Chyba databáze: ${error instanceof Error ? error.message : String(error)}`);
+  throw new Error(JSON.stringify(errInfo));
+}
 
 interface Artist {
   id: string;
@@ -84,6 +132,7 @@ interface PracticalInfo {
 interface Guest {
   name: string;
   role: string;
+  imageUrl?: string;
 }
 
 interface Talkshow {
@@ -93,8 +142,10 @@ interface Talkshow {
   guests: Guest[];
   moderatorName: string;
   moderatorRole: string;
+  moderatorImage?: string;
   closingWordName?: string;
   closingWordRole?: string;
+  closingWordImage?: string;
   desc: string;
   order: number;
   icon?: string;
@@ -148,6 +199,8 @@ interface AboutSection {
   tag: string;
   title: string;
   description: string;
+  size?: 'small' | 'large';
+  items?: { name: string; description: string; link?: string; image?: string }[];
   order: number;
 }
 
@@ -355,7 +408,10 @@ const ProgramDashboard = () => {
   );
 };
 
-const AdminDashboard = ({ artistsCount, infoCount, talkshowsCount, familyCount, communityCount, aboutCount, submissionsCount }: { artistsCount: number, infoCount: number, talkshowsCount: number, familyCount: number, communityCount: number, aboutCount: number, submissionsCount: number }) => (
+const AdminDashboard = ({ artistsCount, infoCount, talkshowsCount, familyCount, communityCount, aboutCount, submissionsCount, listsCount }: { artistsCount: number, infoCount: number, talkshowsCount: number, familyCount: number, communityCount: number, aboutCount: number, submissionsCount: number, listsCount: number }) => {
+  // We pass it to window for the stat list below which is inside the component
+  (window as any).listsCount = listsCount;
+  return (
   <div className="space-y-12 animate-in fade-in duration-700">
     <header className="flex justify-between items-center bg-white p-8 rounded-3xl border border-slate-200 shadow-sm shadow-slate-200/50 text-slate-900 text-left">
       <div className="text-left">
@@ -405,8 +461,9 @@ const AdminDashboard = ({ artistsCount, infoCount, talkshowsCount, familyCount, 
       <BarChart3 size={40} className="mx-auto text-slate-200" />
       <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">Statistiky návštěvnosti budou k dispozici brzy</p>
     </div>
-  </div>
-);
+    </div>
+  );
+};
 
 // Helper to check if an image URL is a valid upload (must be a Firebase Storage URL or a local blob)
 const isValidImageUrl = (url: string | undefined | null) => {
@@ -752,10 +809,7 @@ const IntroManager = () => {
                       />
                     )}
                     {heroData.moto && heroData.moto.trim() !== '' && (
-                      <>
-                        <p className="text-white/80 text-xs font-medium leading-relaxed max-w-[200px]">{heroData.moto}</p>
-                        <div className="h-0.5 w-6 bg-brand-teal/40 rounded-full mx-auto" />
-                      </>
+                      <p className="text-white/80 text-xs font-medium leading-relaxed max-w-[200px]">{heroData.moto}</p>
                     )}
                   </div>
 
@@ -769,11 +823,9 @@ const IntroManager = () => {
                   {/* Quote Part */}
                   {heroData.quote && heroData.quote.trim() !== '' && (
                     <div className="space-y-3 w-full flex flex-col items-center">
-                      <div className="h-px w-6 bg-white/20 mx-auto" />
                       <p className="text-white text-xs font-medium leading-relaxed max-w-[200px] text-center px-6">
                         {heroData.quote}
                       </p>
-                      <div className="h-px w-6 bg-white/20 mx-auto" />
                     </div>
                   )}
                 </div>
@@ -865,8 +917,8 @@ const IntroManager = () => {
                     </div>
                   </div>
                   <div className="flex gap-1 ml-4">
-                    <button onClick={() => handleOpenModal(section)} className="p-2 text-slate-300 hover:text-brand-teal hover:bg-slate-50 rounded-lg transition-all"><Edit size={16} /></button>
-                    <button onClick={() => { setSectionToDelete(section); setIsDeleteModalOpen(true); }} className="p-2 text-slate-300 hover:text-brand-red hover:bg-slate-50 rounded-lg transition-all"><Trash2 size={16} /></button>
+                    <button onClick={() => handleOpenModal(section)} className="p-2 text-slate-400 hover:text-brand-teal hover:bg-slate-50 rounded-lg transition-all"><Edit size={16} /></button>
+                    <button onClick={() => { setSectionToDelete(section); setIsDeleteModalOpen(true); }} className="p-2 text-slate-400 hover:text-brand-red hover:bg-slate-50 rounded-lg transition-all"><Trash2 size={16} /></button>
                   </div>
                 </div>
               ))
@@ -945,8 +997,8 @@ const IntroManager = () => {
                   </div>
                 </div>
                 <div className="flex gap-1">
-                   <button onClick={() => handleOpenInfoModal(item)} className="p-2 text-slate-300 hover:text-brand-teal hover:bg-slate-50 rounded-lg transition-all"><Edit size={16} /></button>
-                   <button onClick={() => { setInfoItemToDelete(item); setIsInfoDeleteModalOpen(true); }} className="p-2 text-slate-300 hover:text-brand-red hover:bg-slate-50 rounded-lg transition-all"><Trash2 size={16} /></button>
+                   <button onClick={() => handleOpenInfoModal(item)} className="p-2 text-slate-400 hover:text-brand-teal hover:bg-slate-50 rounded-lg transition-all"><Edit size={16} /></button>
+                   <button onClick={() => { setInfoItemToDelete(item); setIsInfoDeleteModalOpen(true); }} className="p-2 text-slate-400 hover:text-brand-red hover:bg-slate-50 rounded-lg transition-all"><Trash2 size={16} /></button>
                 </div>
               </div>
             ))}
@@ -1280,7 +1332,7 @@ const ProgramManager = () => {
         tag: formData.tag,
         desc: formData.desc,
         video: extractYoutubeId(formData.video),
-        icon: 'Music',
+        icon: formData.icon,
         updatedAt: serverTimestamp()
       };
 
@@ -1530,8 +1582,8 @@ const ProgramManager = () => {
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  <button onClick={() => handleOpenModal(artist)} className="p-2.5 text-slate-300 hover:text-brand-teal hover:bg-slate-50 rounded-xl transition-all"><Edit size={18} /></button>
-                  <button onClick={() => handleDeleteClick(artist)} className="p-2.5 text-slate-300 hover:text-brand-red hover:bg-slate-50 rounded-xl transition-all"><Trash2 size={18} /></button>
+                  <button onClick={() => handleOpenModal(artist)} className="p-2.5 text-slate-400 hover:text-brand-teal hover:bg-slate-50 rounded-xl transition-all"><Edit size={18} /></button>
+                  <button onClick={() => handleDeleteClick(artist)} className="p-2.5 text-slate-400 hover:text-brand-red hover:bg-slate-50 rounded-xl transition-all"><Trash2 size={18} /></button>
                 </div>
               </div>
             ))}
@@ -1849,8 +1901,8 @@ const PracticalInfoManager = () => {
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  <button onClick={() => handleOpenModal(item)} className="p-2.5 text-slate-300 hover:text-brand-teal hover:bg-slate-50 rounded-xl transition-all"><Edit size={18} /></button>
-                  <button onClick={() => handleDeleteClick(item)} className="p-2.5 text-slate-300 hover:text-brand-red hover:bg-slate-50 rounded-xl transition-all"><Trash2 size={18} /></button>
+                  <button onClick={() => handleOpenModal(item)} className="p-2.5 text-slate-400 hover:text-brand-teal hover:bg-slate-50 rounded-xl transition-all"><Edit size={18} /></button>
+                  <button onClick={() => handleDeleteClick(item)} className="p-2.5 text-slate-400 hover:text-brand-red hover:bg-slate-50 rounded-xl transition-all"><Trash2 size={18} /></button>
                 </div>
               </div>
             ))}
@@ -1974,8 +2026,10 @@ const TalkshowManager = () => {
     guests: [] as Guest[],
     moderatorName: '',
     moderatorRole: '',
+    moderatorImage: '',
     closingWordName: '',
     closingWordRole: '',
+    closingWordImage: '',
     desc: '',
     order: 0,
     icon: 'MessageSquare'
@@ -2043,6 +2097,44 @@ const TalkshowManager = () => {
     setFormData({ ...formData, guests: newGuests });
   };
 
+  const handleGuestImageUpload = async (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const toastId = toast.loading('Nahrávám obrázek hosta...');
+    try {
+      const fileName = `talkshow/guests/${Date.now()}-${file.name}`;
+      const storageRef = ref(storage, fileName);
+      const snapshot = await uploadBytes(storageRef, file);
+      const url = await getDownloadURL(snapshot.ref);
+      
+      handleGuestChange(index, 'imageUrl', url);
+      toast.success('Obrázek nahrán', { id: toastId });
+    } catch (err: any) {
+      console.error('Guest image upload failed:', err);
+      toast.error(`Chyba: ${err.message}`, { id: toastId });
+    }
+  };
+
+  const handleImageUpload = async (field: 'moderatorImage' | 'closingWordImage', e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const toastId = toast.loading('Nahrávám obrázek...');
+    try {
+      const fileName = `talkshow/${field}/${Date.now()}-${file.name}`;
+      const storageRef = ref(storage, fileName);
+      const snapshot = await uploadBytes(storageRef, file);
+      const url = await getDownloadURL(snapshot.ref);
+      
+      setFormData({ ...formData, [field]: url });
+      toast.success('Obrázek nahrán', { id: toastId });
+    } catch (err: any) {
+      console.error('Image upload failed:', err);
+      toast.error(`Chyba: ${err.message}`, { id: toastId });
+    }
+  };
+
   const handleOpenModal = (item?: Talkshow) => {
     if (item) {
       setEditingTalkshow(item);
@@ -2052,8 +2144,10 @@ const TalkshowManager = () => {
         guests: item.guests || [],
         moderatorName: item.moderatorName || '',
         moderatorRole: item.moderatorRole || '',
+        moderatorImage: item.moderatorImage || '',
         closingWordName: item.closingWordName || '',
         closingWordRole: item.closingWordRole || '',
+        closingWordImage: item.closingWordImage || '',
         desc: item.desc,
         order: item.order || 0,
         icon: item.icon || 'MessageSquare'
@@ -2066,8 +2160,10 @@ const TalkshowManager = () => {
         guests: [], 
         moderatorName: '', 
         moderatorRole: '', 
+        moderatorImage: '',
         closingWordName: '',
         closingWordRole: '',
+        closingWordImage: '',
         desc: '', 
         order: talkshows.length,
         icon: 'MessageSquare'
@@ -2087,11 +2183,13 @@ const TalkshowManager = () => {
         guests: formData.guests,
         moderatorName: formData.moderatorName,
         moderatorRole: formData.moderatorRole,
+        moderatorImage: formData.moderatorImage,
         closingWordName: formData.closingWordName,
         closingWordRole: formData.closingWordRole,
+        closingWordImage: formData.closingWordImage,
         desc: formData.desc,
         order: Number(formData.order),
-        icon: 'MessageSquare',
+        icon: formData.icon,
         updatedAt: serverTimestamp()
       };
 
@@ -2215,6 +2313,11 @@ const TalkshowManager = () => {
                                       {item.guests?.map((guest, gi) => (
                                         (guest.name || guest.role) && (
                                           <div key={gi} className="group">
+                                            {guest.imageUrl && (
+                                              <div className="w-14 h-14 rounded-full overflow-hidden mb-4 bg-white/10 border border-white/10 shrink-0">
+                                                <img src={guest.imageUrl} alt={guest.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                                              </div>
+                                            )}
                                             {guest.name && <p className="text-xl font-bold tracking-tight text-white">{guest.name}</p>}
                                             {guest.role && <p className="text-sm text-white/50 font-medium">{guest.role}</p>}
                                           </div>
@@ -2231,8 +2334,14 @@ const TalkshowManager = () => {
                                       <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/40 mb-3">Moderuje</p>
                                       {item.moderatorName && <p className="text-xl font-bold tracking-tight text-white mb-0.5">{item.moderatorName}</p>}
                                       {item.moderatorRole && <p className="text-sm text-white/50 font-medium">{item.moderatorRole}</p>}
-                                      <div className="absolute right-6 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/5 rounded-full flex items-center justify-center text-white/20">
-                                        <Users size={24} />
+                                      <div className="absolute right-6 top-1/2 -translate-y-1/2 w-14 h-14 rounded-full overflow-hidden border border-white/10 shrink-0 bg-white/5">
+                                        {item.moderatorImage ? (
+                                          <img src={item.moderatorImage} alt={item.moderatorName} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                                        ) : (
+                                          <div className="w-full h-full flex items-center justify-center text-white/20">
+                                            <Users size={24} />
+                                          </div>
+                                        )}
                                       </div>
                                     </div>
                                   </div>
@@ -2243,8 +2352,12 @@ const TalkshowManager = () => {
                             {/* Závěrečné slovo */}
                             {item.closingWordName && (
                               <div className="flex items-start gap-4 text-white pt-2">
-                                <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center text-white text-xs font-black tracking-widest shrink-0 shadow-lg mt-1">
-                                  {item.closingWordName.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2)}
+                                <div className="w-14 h-14 rounded-full bg-white/20 overflow-hidden flex items-center justify-center text-white text-xs font-black tracking-widest shrink-0 shadow-lg mt-1 border border-white/10">
+                                  {item.closingWordImage ? (
+                                    <img src={item.closingWordImage} alt={item.closingWordName} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                                  ) : (
+                                    item.closingWordName.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2)
+                                  )}
                                 </div>
                                 <div className="text-left">
                                   <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/40 mb-3 leading-none">Závěrečné slovo</p>
@@ -2285,8 +2398,8 @@ const TalkshowManager = () => {
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  <button onClick={() => handleOpenModal(item)} className="p-2.5 text-slate-300 hover:text-brand-teal hover:bg-slate-50 rounded-xl transition-all"><Edit size={18} /></button>
-                  <button onClick={() => handleDeleteClick(item)} className="p-2.5 text-slate-300 hover:text-brand-red hover:bg-slate-50 rounded-xl transition-all"><Trash2 size={18} /></button>
+                  <button onClick={() => handleOpenModal(item)} className="p-2.5 text-slate-400 hover:text-brand-teal hover:bg-slate-50 rounded-xl transition-all"><Edit size={18} /></button>
+                  <button onClick={() => handleDeleteClick(item)} className="p-2.5 text-slate-400 hover:text-brand-red hover:bg-slate-50 rounded-xl transition-all"><Trash2 size={18} /></button>
                 </div>
               </div>
             ))}
@@ -2324,13 +2437,35 @@ const TalkshowManager = () => {
                     <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2 flex items-center gap-2">
                       <div className="w-2 h-2 rounded-full bg-brand-teal" /> Moderátor
                     </h4>
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Jméno</label>
-                      <input value={formData.moderatorName} onChange={e => setFormData({...formData, moderatorName: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all text-sm" />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Role / Popis</label>
-                      <input value={formData.moderatorRole} onChange={e => setFormData({...formData, moderatorRole: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all text-sm" />
+                    <div className="flex gap-4 items-start">
+                      <div className="shrink-0 space-y-2">
+                        <div className="w-14 h-14 rounded-full bg-slate-50 border border-slate-200 overflow-hidden relative group/img">
+                          {formData.moderatorImage ? (
+                            <img src={formData.moderatorImage} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-slate-300">
+                              <User size={20} />
+                            </div>
+                          )}
+                          <label className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center cursor-pointer">
+                            <Upload size={16} className="text-white" />
+                            <input type="file" accept="image/*" className="hidden" onChange={e => handleImageUpload('moderatorImage', e)} />
+                          </label>
+                        </div>
+                        {formData.moderatorImage && (
+                          <button type="button" onClick={() => setFormData({...formData, moderatorImage: ''})} className="text-[10px] font-bold text-brand-red uppercase tracking-widest block w-full text-center hover:underline">Smazat</button>
+                        )}
+                      </div>
+                      <div className="flex-1 space-y-4">
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Jméno</label>
+                          <input value={formData.moderatorName} onChange={e => setFormData({...formData, moderatorName: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all text-sm" />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Role / Popis</label>
+                          <input value={formData.moderatorRole} onChange={e => setFormData({...formData, moderatorRole: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all text-sm" />
+                        </div>
+                      </div>
                     </div>
                   </div>
 
@@ -2339,13 +2474,37 @@ const TalkshowManager = () => {
                     <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2 flex items-center gap-2">
                       <div className="w-2 h-2 rounded-full bg-brand-yellow" /> Závěrečné slovo
                     </h4>
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Jméno</label>
-                      <input value={formData.closingWordName} onChange={e => setFormData({...formData, closingWordName: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all text-sm" />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Role / Popis</label>
-                      <input value={formData.closingWordRole} onChange={e => setFormData({...formData, closingWordRole: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all text-sm" />
+                    <div className="flex gap-4 items-start">
+                      <div className="shrink-0 space-y-2">
+                        <div className="w-14 h-14 rounded-full bg-slate-50 border border-slate-200 overflow-hidden relative group/img">
+                          {formData.closingWordImage ? (
+                            <img src={formData.closingWordImage} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-slate-300">
+                              <div className="w-full h-full flex items-center justify-center font-bold text-[10px] text-slate-300">
+                                {formData.closingWordName ? formData.closingWordName.split(' ').map((n: string) => n[0]).join('') : 'ZS'}
+                              </div>
+                            </div>
+                          )}
+                          <label className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center cursor-pointer">
+                            <Upload size={16} className="text-white" />
+                            <input type="file" accept="image/*" className="hidden" onChange={e => handleImageUpload('closingWordImage', e)} />
+                          </label>
+                        </div>
+                        {formData.closingWordImage && (
+                          <button type="button" onClick={() => setFormData({...formData, closingWordImage: ''})} className="text-[10px] font-bold text-brand-red uppercase tracking-widest block w-full text-center hover:underline">Smazat</button>
+                        )}
+                      </div>
+                      <div className="flex-1 space-y-4">
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Jméno</label>
+                          <input value={formData.closingWordName} onChange={e => setFormData({...formData, closingWordName: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all text-sm" />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Role / Popis</label>
+                          <input value={formData.closingWordRole} onChange={e => setFormData({...formData, closingWordRole: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all text-sm" />
+                        </div>
+                      </div>
                     </div>
                   </div>
 
@@ -2365,6 +2524,24 @@ const TalkshowManager = () => {
                     <div className="space-y-3">
                       {formData.guests.map((guest, index) => (
                         <div key={index} className="flex gap-3 items-start p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                          <div className="shrink-0 space-y-2">
+                             <div className="w-14 h-14 rounded-full bg-white border border-slate-200 overflow-hidden relative group/img">
+                               {guest.imageUrl ? (
+                                 <img src={guest.imageUrl} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                               ) : (
+                                 <div className="w-full h-full flex items-center justify-center text-slate-300">
+                                   <User size={20} />
+                                 </div>
+                               )}
+                               <label className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center cursor-pointer">
+                                 <Upload size={16} className="text-white" />
+                                 <input type="file" accept="image/*" className="hidden" onChange={e => handleGuestImageUpload(index, e)} />
+                               </label>
+                             </div>
+                             {guest.imageUrl && (
+                               <button type="button" onClick={() => handleGuestChange(index, 'imageUrl', '')} className="text-[10px] font-bold text-brand-red uppercase tracking-widest block w-full text-center hover:underline">Smazat foto</button>
+                             )}
+                          </div>
                           <div className="flex-1 space-y-2">
                             <div className="space-y-1">
                               <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Jméno hosta <span className="text-brand-red">*</span></label>
@@ -2375,7 +2552,7 @@ const TalkshowManager = () => {
                               <input value={guest.role} onChange={e => handleGuestChange(index, 'role', e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2 text-slate-500 text-xs outline-none focus:border-brand-teal transition-all" />
                             </div>
                           </div>
-                          <button type="button" onClick={() => handleRemoveGuest(index)} className="p-2 text-slate-300 hover:text-brand-red transition-colors">
+                          <button type="button" onClick={() => handleRemoveGuest(index)} className="p-2 text-slate-400 hover:text-brand-red transition-colors">
                             <Trash2 size={16} />
                           </button>
                         </div>
@@ -2407,6 +2584,34 @@ const TalkshowManager = () => {
                 <button onClick={handleConfirmDelete} disabled={isDeleting} className="flex-1 py-4 bg-brand-red text-white rounded-xl font-black uppercase tracking-widest shadow-lg hover:bg-red-600 transition-all">{isDeleting ? 'Mažu...' : 'Smazat'}</button>
                 <button onClick={() => setIsDeleteModalOpen(false)} className="flex-1 py-4 bg-slate-50 text-slate-400 rounded-xl font-black uppercase tracking-widest hover:bg-slate-100 transition-all">Zrušit</button>
               </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Header Edit Modal */}
+      <AnimatePresence>
+        {isHeaderModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/80 backdrop-blur-sm">
+            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl p-10">
+              <div className="flex justify-between items-center mb-10 text-left">
+                <div className="text-left">
+                  <h3 className="text-2xl font-black uppercase tracking-tighter text-slate-900">Upravit záhlaví</h3>
+                  <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">Talkshow</p>
+                </div>
+                <button onClick={() => setIsHeaderModalOpen(false)} className="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400 hover:bg-slate-100 transition-all"><X size={24} /></button>
+              </div>
+
+              <form onSubmit={handleHeaderSubmit} className="space-y-6">
+                <div className="space-y-2 text-left">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Podnadpis <span className="text-brand-red">*</span></label>
+                  <input required value={headerFormData.subtitle} onChange={e => setHeaderFormData({...headerFormData, subtitle: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all" />
+                </div>
+                <div className="pt-4 flex gap-4">
+                  <button type="submit" disabled={isHeaderSubmitting} className="flex-1 py-4 bg-brand-teal text-black rounded-xl font-black uppercase tracking-widest shadow-lg hover:bg-brand-teal-light transition-all disabled:opacity-50">{isHeaderSubmitting ? 'Ukládám...' : 'Uložit záhlaví'}</button>
+                  <button type="button" onClick={() => setIsHeaderModalOpen(false)} className="flex-1 py-4 bg-slate-50 text-slate-400 rounded-xl font-black uppercase tracking-widest hover:bg-slate-100 transition-all">Zrušit</button>
+                </div>
+              </form>
             </motion.div>
           </div>
         )}
@@ -2546,7 +2751,7 @@ const FamilyProgramManager = () => {
         mainPoint: formData.mainPoint,
         mainPointTime: formData.mainPointTime,
         order: Number(formData.order),
-        icon: 'Star',
+        icon: formData.icon,
         updatedAt: serverTimestamp()
       };
 
@@ -2716,8 +2921,8 @@ const FamilyProgramManager = () => {
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  <button onClick={() => handleOpenModal(item)} className="p-2.5 text-slate-300 hover:text-brand-teal hover:bg-slate-50 rounded-xl transition-all"><Edit size={18} /></button>
-                  <button onClick={() => handleDeleteClick(item)} className="p-2.5 text-slate-300 hover:text-brand-red hover:bg-slate-50 rounded-xl transition-all"><Trash2 size={18} /></button>
+                  <button onClick={() => handleOpenModal(item)} className="p-2.5 text-slate-400 hover:text-brand-teal hover:bg-slate-50 rounded-xl transition-all"><Edit size={18} /></button>
+                  <button onClick={() => handleDeleteClick(item)} className="p-2.5 text-slate-400 hover:text-brand-red hover:bg-slate-50 rounded-xl transition-all"><Trash2 size={18} /></button>
                 </div>
               </div>
             ))}
@@ -2798,7 +3003,7 @@ const FamilyProgramManager = () => {
                             <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Název aktivity <span className="text-brand-red">*</span></label>
                             <input required value={activity.name} onChange={e => handleActivityChange(index, 'name', e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-slate-900 text-sm outline-none focus:border-brand-teal transition-all" />
                           </div>
-                          <button type="button" onClick={() => handleRemoveActivity(index)} className="p-3 text-slate-300 hover:text-brand-red transition-colors">
+                          <button type="button" onClick={() => handleRemoveActivity(index)} className="p-3 text-slate-400 hover:text-brand-red transition-colors">
                             <Trash2 size={18} />
                           </button>
                         </div>
@@ -3251,8 +3456,8 @@ const CommunityManager: React.FC = () => {
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  <button onClick={() => handleOpenModal(section)} className="p-2.5 text-slate-300 hover:text-brand-teal hover:bg-slate-50 rounded-xl transition-all"><Edit size={18} /></button>
-                  <button onClick={() => handleDeleteClick(section)} className="p-2.5 text-slate-300 hover:text-brand-red hover:bg-slate-50 rounded-xl transition-all"><Trash2 size={18} /></button>
+                  <button onClick={() => handleOpenModal(section)} className="p-2.5 text-slate-400 hover:text-brand-teal hover:bg-slate-50 rounded-xl transition-all"><Edit size={18} /></button>
+                  <button onClick={() => handleDeleteClick(section)} className="p-2.5 text-slate-400 hover:text-brand-red hover:bg-slate-50 rounded-xl transition-all"><Trash2 size={18} /></button>
                 </div>
               </div>
             ))}
@@ -3278,13 +3483,11 @@ const CommunityManager: React.FC = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-left">
                   <div className="md:col-span-2 space-y-2">
                     <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1 font-black">Typ sekce <span className="text-brand-red">*</span></label>
-                    <input required value={formData.title} onChange={e => {
-                      const newTitle = e.target.value;
-                      setFormData({
-                        ...formData, 
-                        title: newTitle
-                      });
-                    }} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all font-black uppercase" />
+                    <input 
+                      readOnly 
+                      value={formData.title} 
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all font-black cursor-default" 
+                    />
                   </div>
 
                   <div className="md:col-span-2 space-y-3">
@@ -3338,7 +3541,7 @@ const CommunityManager: React.FC = () => {
                       <div className="space-y-3">
                         {formData.items.map((item, index) => (
                           <div key={index} className="p-4 bg-slate-50 rounded-2xl border border-slate-100 relative group">
-                            <button type="button" onClick={() => handleRemoveItem(index)} className="absolute top-4 right-4 p-2 text-slate-300 hover:text-brand-red transition-colors opacity-0 group-hover:opacity-100"><Trash2 size={16} /></button>
+                            <button type="button" onClick={() => handleRemoveItem(index)} className="absolute top-4 right-4 p-2 text-slate-400 hover:text-brand-red transition-colors"><Trash2 size={16} /></button>
                             <div className="grid gap-3 mt-2 md:mt-0 md:pr-8">
                               <div className="space-y-1 text-left">
                                 <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Název <span className="text-brand-red">*</span></label>
@@ -3471,34 +3674,85 @@ const AboutManager = () => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [sectionToDelete, setSectionToDelete] = useState<AboutSection | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [formData, setFormData] = useState({ tag: '', title: '', description: '', order: 0 });
+  const [formData, setFormData] = useState({ 
+    tag: '', 
+    title: '', 
+    description: '', 
+    size: 'small' as 'small' | 'large', 
+    items: [] as { name: string; description: string; link?: string; image?: string }[],
+    order: 0 
+  });
   const [headerData, setHeaderData] = useState({ subtitle: 'Příběh festivalu' });
   const [isHeaderModalOpen, setIsHeaderModalOpen] = useState(false);
   const [headerFormData, setHeaderFormData] = useState({ subtitle: '' });
   const [isHeaderSubmitting, setIsHeaderSubmitting] = useState(false);
 
   useEffect(() => {
-    onSnapshot(doc(db, 'settings', 'aboutHeader'), (snapshot) => {
+    const unsubHeader = onSnapshot(doc(db, 'settings', 'aboutHeader'), (snapshot) => {
       if (snapshot.exists()) setHeaderData(snapshot.data() as any);
     });
 
     const q = query(collection(db, 'aboutSections'), orderBy('order', 'asc'));
-    return onSnapshot(q, (snapshot) => {
+    const unsubSections = onSnapshot(q, (snapshot) => {
       setSections(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as AboutSection)));
       setLoading(false);
     }, (error) => {
       console.error("Error fetching about sections:", error);
       setLoading(false);
     });
+
+    return () => {
+      unsubHeader();
+      unsubSections();
+    };
   }, []);
 
-  const handleOpenModal = (section?: AboutSection) => {
+  const handleItemChange = (index: number, field: string, value: any) => {
+    const newItems = [...formData.items];
+    newItems[index] = { ...newItems[index], [field]: value };
+    setFormData({ ...formData, items: newItems });
+  };
+
+  const handleItemImageUpload = async (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const toastId = toast.loading('Nahrávám obrázek...');
+    try {
+      const fileName = `about/items/${Date.now()}-${file.name}`;
+      const storageRef = ref(storage, fileName);
+      const snapshot = await uploadBytes(storageRef, file);
+      const url = await getDownloadURL(snapshot.ref);
+      
+      handleItemChange(index, 'image', url);
+      toast.success('Obrázer nahrán', { id: toastId });
+    } catch (err: any) {
+      console.error('About item image upload failed:', err);
+      toast.error(`Chyba: ${err.message}`, { id: toastId });
+    }
+  };
+
+  const handleOpenModal = (section?: AboutSection, forcedSize?: 'small' | 'large') => {
     if (section) {
       setEditingSection(section);
-      setFormData({ tag: section.tag, title: section.title, description: section.description, order: section.order });
+      setFormData({ 
+        tag: section.tag, 
+        title: section.title, 
+        description: section.description, 
+        size: section.size || 'small',
+        items: section.items || [],
+        order: section.order 
+      });
     } else {
       setEditingSection(null);
-      setFormData({ tag: '', title: '', description: '', order: sections.length });
+      setFormData({ 
+        tag: '', 
+        title: '', 
+        description: '', 
+        size: forcedSize || 'small',
+        items: [],
+        order: sections.length 
+      });
     }
     setIsModalOpen(true);
   };
@@ -3581,55 +3835,110 @@ const AboutManager = () => {
             </div>
             <p className="text-slate-400 text-sm font-bold tracking-widest uppercase">{headerData.subtitle}</p>
           </div>
-          <button 
-            onClick={() => handleOpenModal()} 
-            className="flex items-center gap-3 px-6 py-4 bg-brand-teal text-black rounded-xl font-bold uppercase text-xs tracking-widest hover:bg-brand-teal-light transition-all shadow-lg active:scale-95"
-          >
-            <Plus size={18} /> Přidat sekci
-          </button>
+          <div className="flex flex-col gap-3">
+            <button 
+              onClick={() => handleOpenModal(undefined, 'large')} 
+              className="flex items-center gap-3 px-6 py-4 bg-brand-teal text-black rounded-xl font-bold uppercase text-xs tracking-widest hover:bg-brand-teal-light transition-all shadow-lg active:scale-95 shrink-0 whitespace-nowrap"
+            >
+              <Plus size={18} /> Přidat velkou sekci
+            </button>
+            <button 
+              onClick={() => handleOpenModal(undefined, 'small')} 
+              className="flex items-center gap-3 px-6 py-4 bg-slate-100 text-slate-600 rounded-xl font-bold uppercase text-xs tracking-widest hover:bg-slate-200 transition-all border border-slate-200 shadow-sm active:scale-95 shrink-0 whitespace-nowrap"
+            >
+              <Plus size={18} /> Přidat malou sekci
+            </button>
+          </div>
         </div>
 
         <div className="space-y-2">
           <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Náhled</label>
           <div className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm">
             {/* Visual Preview */}
-          <div className="bg-brand-red p-12 md:p-20 relative overflow-hidden text-white">
+          <div id="o-festivalu" className="bg-brand-red text-white py-24 relative overflow-hidden">
             <div className="absolute top-0 right-0 w-1/3 h-full bg-black/5 -skew-x-12 transform translate-x-1/2" />
-            <div className="absolute bottom-0 left-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -translate-x-1/2 translate-y-1/2" />
+            <div className="absolute bottom-0 left-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -translate-x-1/2 translate-y-1/2 shadow-[0_0_100px_rgba(255,255,255,0.1)]" />
             
-            <div className="relative z-10 max-w-5xl mx-auto">
-              <div className="mb-12 text-center">
-                <div className="text-[10px] font-bold tracking-[0.4em] text-white/50 mb-4 uppercase">{headerData.subtitle}</div>
-                <div className="text-5xl md:text-7xl font-sans font-bold tracking-tighter leading-none text-white uppercase mb-4">O festivalu</div>
+            <div className="max-w-6xl mx-auto px-6 relative z-10">
+              <div className="mb-16 text-center">
+                <p className="text-[10px] font-bold uppercase tracking-[0.4em] text-white/50 mb-4">{headerData.subtitle}</p>
+                <h2 className="text-5xl md:text-7xl font-sans font-bold tracking-tighter mb-8 uppercase leading-none">O festivalu</h2>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
+              <div className="flex flex-col gap-8 relative z-10">
                 {loading ? (
                   <div className="col-span-full py-20 flex justify-center"><Loader2 className="animate-spin text-white/20" size={32} /></div>
                 ) : sections.length === 0 ? (
-                  <div className="col-span-full py-20 text-center border-2 border-dashed border-white/10 rounded-3xl opacity-30 w-full">
-                    <div className="text-[10px] font-bold uppercase tracking-widest text-white">Informace o festivalu připravujeme</div>
+                  <div className="col-span-full py-20 text-center border-2 border-dashed border-white/10 rounded-3xl opacity-30 w-full font-bold uppercase tracking-widest text-[10px]">
+                    Informace o festivalu připravujeme
                   </div>
                 ) : (
-                  sections.map((s, idx) => (
-                    <div 
-                      key={s.id} 
-                      className={`p-8 md:p-10 space-y-6 relative group overflow-hidden rounded-3xl border border-white/5 text-left ${
-                        idx % 2 === 0 ? 'bg-black/20' : 'bg-black/40'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className={`h-0.5 w-6 ${idx % 2 === 0 ? 'bg-brand-yellow' : 'bg-brand-teal'}`} />
-                        <div className={`text-[10px] font-black uppercase tracking-[0.3em] ${idx % 2 === 0 ? 'text-brand-yellow' : 'text-brand-teal'}`}>{s.tag}</div>
+                  sections.map((section, idx) => {
+                    const isLarge = section.size === 'large';
+                    const tagColorClass = isLarge ? 'text-brand-teal' : 'text-brand-yellow';
+                    const barColorClass = isLarge ? 'bg-brand-teal' : 'bg-brand-yellow';
+                    const bgClass = isLarge ? 'bg-[#4a0a0a]' : (idx % 2 === 0 ? 'bg-black/20' : 'bg-black/40');
+                    
+                    return (
+                      <div 
+                        key={section.id} 
+                        className={`${bgClass} ${isLarge ? 'p-12 md:p-20' : 'p-10 md:p-14'} space-y-8 relative group overflow-hidden rounded-[2rem] md:rounded-[3rem] border border-white/5 text-left transition-all duration-500`}
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className={`h-0.5 w-8 ${barColorClass}`} />
+                          <p className={`text-xs font-black uppercase tracking-[0.4em] ${tagColorClass}`}>{section.tag}</p>
+                        </div>
+                        <p className={`${isLarge ? 'text-3xl md:text-5xl' : 'text-2xl md:text-3xl'} font-sans font-bold leading-tight tracking-tighter whitespace-pre-wrap`}>
+                          {section.title}
+                        </p>
+                        <p className={`${isLarge ? 'text-xl' : 'text-lg'} text-white/80 leading-relaxed font-light whitespace-pre-wrap max-w-5xl`}>
+                          {section.description}
+                        </p>
+
+                        {section.items && section.items.length > 0 && (
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 pt-8 border-t border-white/10">
+                            {section.items.map((item, i) => (
+                              <div key={i} className="space-y-2">
+                                {item.link ? (
+                                  <a 
+                                    href={item.link.startsWith('http') ? item.link : `https://${item.link}`}
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="group/item flex gap-6 text-left items-start"
+                                  >
+                                    {item.image && (
+                                      <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white bg-white group-hover/item:border-brand-teal transition-colors shrink-0 p-1.5 flex items-center justify-center">
+                                        <img src={item.image} className="w-full h-full object-contain transition-all duration-500" alt={item.name} referrerPolicy="no-referrer" />
+                                      </div>
+                                    )}
+                                    <div className="space-y-2 flex-1">
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-xl font-bold text-white group-hover/item:text-brand-teal transition-colors tracking-tight">{item.name}</span>
+                                        <ExternalLink size={14} className="opacity-0 group-hover/item:opacity-100 transition-opacity text-brand-teal" />
+                                      </div>
+                                      {item.description && <p className="text-sm text-white/70 leading-relaxed font-light whitespace-pre-wrap">{item.description}</p>}
+                                    </div>
+                                  </a>
+                                ) : (
+                                  <div className="flex gap-6 text-left items-start">
+                                    {item.image && (
+                                      <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white bg-white shrink-0 p-1.5 flex items-center justify-center">
+                                        <img src={item.image} className="w-full h-full object-contain transition-all duration-500" alt={item.name} referrerPolicy="no-referrer" />
+                                      </div>
+                                    )}
+                                    <div className="space-y-2 flex-1">
+                                      <span className="text-xl font-bold text-white tracking-tight">{item.name}</span>
+                                      {item.description && <p className="text-sm text-white/70 leading-relaxed font-light whitespace-pre-wrap">{item.description}</p>}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
-                      <div className="text-xl md:text-2xl font-sans font-bold leading-tight tracking-tighter whitespace-pre-wrap text-white">
-                        {s.title}
-                      </div>
-                      <div className="text-sm text-white leading-relaxed font-light line-clamp-4 opacity-70">
-                        {s.description}
-                      </div>
-                    </div>
-                  ))
+                    );
+                  })
                 )}
               </div>
             </div>
@@ -3649,8 +3958,8 @@ const AboutManager = () => {
                   </div>
                 </div>
                 <div className="flex gap-1 ml-4">
-                  <button onClick={() => handleOpenModal(s)} className="p-2 text-slate-300 hover:text-brand-teal hover:bg-slate-50 rounded-lg transition-all"><Edit size={16} /></button>
-                  <button onClick={() => { setSectionToDelete(s); setIsDeleteModalOpen(true); }} className="p-2 text-slate-300 hover:text-brand-red hover:bg-slate-50 rounded-lg transition-all"><Trash2 size={16} /></button>
+                  <button onClick={() => handleOpenModal(s)} className="p-2 text-slate-400 hover:text-brand-teal hover:bg-slate-50 rounded-lg transition-all"><Edit size={16} /></button>
+                  <button onClick={() => { setSectionToDelete(s); setIsDeleteModalOpen(true); }} className="p-2 text-slate-400 hover:text-brand-red hover:bg-slate-50 rounded-lg transition-all"><Trash2 size={16} /></button>
                 </div>
               </div>
             ))}
@@ -3709,6 +4018,15 @@ const AboutManager = () => {
 
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="space-y-6">
+                  <div className="space-y-1 text-left">
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1 font-black">Typ sekce <span className="text-brand-red">*</span></label>
+                    <input 
+                      readOnly 
+                      value={formData.size === 'large' ? 'Velká sekce' : 'Malá sekce'} 
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all font-black cursor-default"
+                    />
+                  </div>
+
                   <div className="space-y-2 text-left">
                     <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Tag</label>
                     <input value={formData.tag} onChange={e => setFormData({...formData, tag: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all" />
@@ -3721,6 +4039,73 @@ const AboutManager = () => {
                     <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Popis</label>
                     <textarea rows={5} value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none resize-none transition-all" />
                   </div>
+
+                  {formData.size === 'large' && (
+                    <div className="space-y-6 pt-6 border-t border-slate-100">
+                      <div className="flex justify-between items-center">
+                        <h4 className="text-sm font-black uppercase tracking-tighter text-slate-900">Seznam položek</h4>
+                        <button 
+                          type="button"
+                          onClick={() => setFormData({...formData, items: [...formData.items, { name: '', description: '', link: '' }]})}
+                          className="px-3 py-1.5 bg-slate-50 text-slate-400 rounded-lg font-bold uppercase text-[8px] tracking-widest hover:bg-slate-100 transition-all flex items-center gap-1"
+                        >
+                          <Plus size={10} /> Přidat položku
+                        </button>
+                      </div>
+
+                      <div className="space-y-4">
+                        {formData.items.map((item, idx) => (
+                          <div key={idx} className="p-6 bg-slate-50 rounded-2xl space-y-4 relative group">
+                            <button 
+                              type="button"
+                              onClick={() => {
+                                const newItems = [...formData.items];
+                                newItems.splice(idx, 1);
+                                setFormData({...formData, items: newItems});
+                              }}
+                              className="absolute top-4 right-4 w-8 h-8 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-400 hover:text-brand-red transition-all"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                            <div className="flex gap-6 items-start">
+                              <div className="shrink-0 space-y-2">
+                                <div className="w-24 h-24 rounded-2xl bg-white border border-slate-200 overflow-hidden relative group/img">
+                                  {item.image ? (
+                                    <img src={item.image} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                                  ) : (
+                                    <div className="w-full h-full flex items-center justify-center text-slate-300">
+                                      <ImageIcon size={24} />
+                                    </div>
+                                  )}
+                                  <label className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center cursor-pointer">
+                                    <Upload size={20} className="text-white" />
+                                    <input type="file" accept="image/*" className="hidden" onChange={e => handleItemImageUpload(idx, e)} />
+                                  </label>
+                                </div>
+                                {item.image && (
+                                  <button type="button" onClick={() => handleItemChange(idx, 'image', '')} className="text-[10px] font-bold text-brand-red uppercase tracking-widest block w-full text-center hover:underline">Smazat foto</button>
+                                )}
+                              </div>
+                              <div className="flex-1 space-y-4">
+                                <div className="space-y-1">
+                                  <label className="text-[8px] font-bold uppercase tracking-widest text-slate-400 ml-1">Název položky</label>
+                                  <input value={item.name} onChange={e => handleItemChange(idx, 'name', e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2 text-sm text-slate-900 focus:border-brand-teal outline-none transition-all" />
+                                </div>
+                                <div className="space-y-1">
+                                  <label className="text-[8px] font-bold uppercase tracking-widest text-slate-400 ml-1">Popis</label>
+                                  <textarea rows={3} value={item.description} onChange={e => handleItemChange(idx, 'description', e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2 text-sm text-slate-900 focus:border-brand-teal outline-none transition-all resize-none" />
+                                </div>
+                                <div className="space-y-1">
+                                  <label className="text-[8px] font-bold uppercase tracking-widest text-slate-400 ml-1">Odkaz (URL)</label>
+                                  <input value={item.link} onChange={e => handleItemChange(idx, 'link', e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2 text-sm text-slate-900 focus:border-brand-teal outline-none transition-all" />
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
                 <div className="pt-4 flex gap-4">
                   <button type="submit" disabled={isSubmitting} className="flex-1 py-4 bg-brand-teal text-black rounded-xl font-black uppercase tracking-widest shadow-lg hover:bg-brand-teal-light transition-all disabled:opacity-50">{isSubmitting ? 'Ukládám...' : 'Uložit sekci'}</button>
@@ -4202,6 +4587,43 @@ const SettingsManager = () => {
               </div>
             </div>
           </div>
+          
+          <div className="space-y-4">
+            <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Náhledový obrázek pro sociální sítě (OG Image)</label>
+            <div className="p-6 bg-slate-50 rounded-2xl border border-slate-200 space-y-4">
+              <div className="flex items-center gap-6">
+                <div className="w-40 h-24 bg-white rounded-xl border border-dashed border-slate-200 flex items-center justify-center overflow-hidden shadow-inner">
+                  {isValidImageUrl(ogImageUrl) ? (
+                    <img 
+                      src={ogImageUrl} 
+                      alt={ogImageAlt} 
+                      className="max-h-full max-w-full object-cover" 
+                      onError={() => setOgImageUrl('')}
+                    />                
+                  ) : (
+                    <div className="flex flex-col items-center gap-1 text-slate-300">
+                      <ImageIcon size={24} />
+                      <span className="text-[8px] font-bold uppercase">1200x630px</span>
+                    </div>
+                  )}
+                </div>
+                <div className="flex-1 space-y-3">
+                  <input type="file" onChange={e => handleFileUpload(e, 'og')} className="text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:bg-brand-teal file:text-black hover:file:bg-brand-teal-light cursor-pointer" accept="image/*" />
+                  <p className="text-[9px] text-slate-400">Doporučený rozměr je 1200x630 pixelů pro optimální zobrazení na Facebooku a Instagramu.</p>
+                </div>
+                {isUploadingOg && <Loader2 className="animate-spin text-brand-teal" size={24} />}
+              </div>
+              <div className="space-y-1">
+                <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 ml-1">ALT text pro náhledový obrázek</label>
+                <input 
+                  value={ogImageAlt} 
+                  onChange={e => setOgImageAlt(e.target.value)} 
+                  className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2 text-sm text-slate-900 outline-none focus:border-brand-teal" 
+                  placeholder="Popis obrázku pro sociální sítě..."
+                />
+              </div>
+            </div>
+          </div>
           <div className="space-y-2">
             <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Primární doména (vč. https://)</label>
             <input 
@@ -4401,6 +4823,7 @@ export default function Admin() {
   const [aboutCount, setAboutCount] = useState(0);
   const [submissionsCount, setSubmissionsCount] = useState(0);
   const [logoPassive, setLogoPassive] = useState('');
+  const [listsCount, setListsCount] = useState(0);
 
   useEffect(() => {
     const unsubGlobal = onSnapshot(doc(db, 'settings', 'global'), (snapshot) => {
@@ -4439,6 +4862,11 @@ export default function Admin() {
       setAboutCount(snapshot.size);
     });
 
+    const qLists = query(collection(db, 'festivalLists'));
+    const unsubLists = onSnapshot(qLists, (snapshot) => {
+      setListsCount(snapshot.size);
+    });
+
     const qSub = query(collection(db, 'contactSubmissions'));
     const unsubSub = onSnapshot(qSub, (snapshot) => {
       setSubmissionsCount(snapshot.size);
@@ -4452,6 +4880,7 @@ export default function Admin() {
       unsub4();
       unsub5();
       unsub6();
+      unsubLists();
       unsubSub();
     };
   }, []);
@@ -4527,7 +4956,7 @@ export default function Admin() {
       {/* Main Content */}
       <main className="flex-1 p-8 md:p-16 max-w-[1600px] w-full mx-auto overflow-y-auto admin-main">
         <Routes>
-          <Route path="/" element={<AdminDashboard artistsCount={artistsCount} infoCount={infoCount} talkshowsCount={talkshowsCount} familyCount={familyCount} communityCount={communityCount} aboutCount={aboutCount} submissionsCount={submissionsCount} />} />
+          <Route path="/" element={<AdminDashboard artistsCount={artistsCount} infoCount={infoCount} talkshowsCount={talkshowsCount} familyCount={familyCount} communityCount={communityCount} aboutCount={aboutCount} submissionsCount={submissionsCount} listsCount={listsCount} />} />
           <Route path="/intro" element={<IntroManager />} />
           <Route path="/program" element={<ProgramDashboard />} />
           <Route path="/program/music" element={<ProgramManager />} />

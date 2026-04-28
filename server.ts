@@ -34,7 +34,7 @@ async function startServer() {
         });
       }
       bucket = admin.storage().bucket();
-      db = admin.firestore(firebaseConfig.firestoreDatabaseId);
+      db = admin.firestore();
       console.log('Firebase initialized successfully');
     } else {
       console.warn('firebase-applet-config.json not found, some features will be disabled');
