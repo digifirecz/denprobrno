@@ -25,7 +25,7 @@ async function startServer() {
     const configPath = path.resolve(process.cwd(), 'firebase-applet-config.json');
     if (fs.existsSync(configPath)) {
       firebaseConfig = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
-      
+
       if (!admin.apps.length) {
         admin.initializeApp({
           credential: admin.credential.applicationDefault(),
@@ -85,7 +85,7 @@ async function startServer() {
     try {
       const url = req.originalUrl;
       let template: string;
-      
+
       if (vite) {
         template = fs.readFileSync(path.resolve(process.cwd(), 'index.html'), 'utf-8');
         template = await vite.transformIndexHtml(url, template);
@@ -102,14 +102,14 @@ async function startServer() {
             db.collection('settings').doc('global').get(),
             db.collection('settings').doc('hero').get()
           ]);
-          
+
           if (settingsDoc.exists) settings = settingsDoc.data() || {};
           if (heroDoc.exists) heroData = heroDoc.data() || {};
         } catch (err) {
           console.warn('Could not fetch dynamic settings, using defaults');
         }
       }
-      
+
       const title = settings.title || 'Den pro Brno';
       const description = settings.description || 'Den pro Brno je kulturně-komunitní festival, který spojuje lidi a oslavuje naše město.';
       const ogTitle = settings.ogTitle || title;
@@ -121,10 +121,10 @@ async function startServer() {
 
       // Perform replacements with more robust regex (case insensitive, handles spacing)
       let html = template
-        .replace(/<title>[\s\S]*?<\/title>/i, `<title>${title}</title>`)
-        .replace(/<meta\s+name=["']description["']\s+content=["'][\s\S]*?["']\s*\/?>/i, `<meta name="description" content="${description}" />`)
-        .replace(/<meta\s+property=["']og:title["']\s+content=["'][\s\S]*?["']\s*\/?>/i, `<meta property="og:title" content="${ogTitle}" />`)
-        .replace(/<meta\s+property=["']og:description["']\s+content=["'][\s\S]*?["']\s*\/?>/i, `<meta property="og:description" content="${ogDescription}" />`);
+          .replace(/<title>[\s\S]*?<\/title>/i, `<title>${title}</title>`)
+          .replace(/<meta\s+name=["']description["']\s+content=["'][\s\S]*?["']\s*\/?>/i, `<meta name="description" content="${description}" />`)
+          .replace(/<meta\s+property=["']og:title["']\s+content=["'][\s\S]*?["']\s*\/?>/i, `<meta property="og:title" content="${ogTitle}" />`)
+          .replace(/<meta\s+property=["']og:description["']\s+content=["'][\s\S]*?["']\s*\/?>/i, `<meta property="og:description" content="${ogDescription}" />`);
 
       // Inject Google Analytics if measurement ID is present
       let gaScript = '';
@@ -138,21 +138,20 @@ async function startServer() {
       gtag('config', '${gaMeasurementId}');
     </script>`;
       }
-      
+
       // Use a more robust replacement for GA_SCRIPT that handles placeholders better
-      const gaPlaceholderRegex = /{{GA_SCRIPT}}|<!--\s*GA_SCRIPT_START\s*-->[\s\S]*?<!--\s*GA_SCRIPT_END\s*-->/i;
-      if (gaPlaceholderRegex.test(html)) {
-        html = html.replace(gaPlaceholderRegex, gaScript);
+      if (html.includes('%GA_SCRIPT%')) {
+        html = html.replaceAll('%GA_SCRIPT%', gaScript);
       } else {
         // Fallback: inject before </head> if placeholder not found
-        html = html.replace(/<\/head>/i, `${gaScript}\n</head>`);
+        html = html.replace(/<\/head>/i, () => `${gaScript}\n</head>`);
       }
 
       // Inject preloads for critical images
       let preloadTags = '';
       if (logoUrl) preloadTags += `<link rel="preload" as="image" href="${logoUrl}" />\n  `;
       if (heroImageUrl) preloadTags += `<link rel="preload" as="image" href="${heroImageUrl}" />\n  `;
-      
+
       if (preloadTags) {
         html = html.replace(/<\/head>/i, `${preloadTags}</head>`);
       }
@@ -161,11 +160,11 @@ async function startServer() {
 
       // Inject favicon if it's there
       if (faviconUrl) {
-         if (/<link\s+[^>]*rel=["']icon["']/.test(html)) {
-           html = html.replace(/<link\s+[^>]*rel=["']icon["'][^>]*\/?>/i, `<link rel="icon" href="${faviconUrl}" />`);
-         } else {
-           html = html.replace(/<\/head>/i, `  <link rel="icon" href="${faviconUrl}" />\n  </head>`);
-         }
+        if (/<link\s+[^>]*rel=["']icon["']/.test(html)) {
+          html = html.replace(/<link\s+[^>]*rel=["']icon["'][^>]*\/?>/i, `<link rel="icon" href="${faviconUrl}" />`);
+        } else {
+          html = html.replace(/<\/head>/i, `  <link rel="icon" href="${faviconUrl}" />\n  </head>`);
+        }
       }
 
       res.status(200).set({ 'Content-Type': 'text/html' }).end(html);
@@ -183,7 +182,7 @@ async function startServer() {
       appType: 'custom', // Change to custom to handle index.html manually
     });
     app.use(vite.middlewares);
-    
+
     // Explicitly handle index.html for all other routes in dev
     app.get('*', (req, res, next) => {
       // Skip API routes and static files that Vite should handle
