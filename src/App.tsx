@@ -4,6 +4,7 @@ import { Toaster } from 'react-hot-toast';
 import { Loader2 } from 'lucide-react';
 import { AuthProvider, useAuth } from './context/AuthContext.tsx';
 import { CookieConsent } from './components/CookieConsent.tsx';
+import { GoogleAnalytics } from './components/GoogleAnalytics.tsx';
 import Home from './pages/Home.tsx';
 import Login from './pages/Login.tsx';
 import Admin from './pages/Admin.tsx';
@@ -60,6 +61,7 @@ function AppRoutes() {
 export default function App() {
   return (
     <AuthProvider>
+      <GoogleAnalytics />
       <Router>
         <AppRoutes />
       </Router>
