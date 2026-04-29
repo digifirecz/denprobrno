@@ -1509,9 +1509,9 @@ const ProgramManager = () => {
                               </div>
                             )}
                             <div className="p-6 flex-1 flex flex-col">
-                              <div className="flex items-center justify-between gap-3 mb-4">
-                                <div className="flex items-center gap-3">
-                                  <div className={`transition-opacity ${isExpanded ? 'opacity-100 text-brand-teal' : 'opacity-30 group-hover:opacity-100'}`}>
+                              <div className={`flex items-center justify-between gap-3 ${isExpanded ? 'mb-4' : 'mb-0'}`}>
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <div className={`shrink-0 transition-opacity ${isExpanded ? 'opacity-100 text-brand-teal' : 'opacity-30 group-hover:opacity-100'}`}>
                                     {(() => {
                                        const IconData = COMMUNITY_ICONS.find(i => i.id === artist.icon);
                                        const Icon = IconData ? IconData.icon : Music;
@@ -1522,7 +1522,7 @@ const ProgramManager = () => {
                                     {artist.name}
                                   </div>
                                 </div>
-                                {isExpanded ? <ChevronUp size={20} className="text-brand-teal" /> : <ChevronDown size={20} className="opacity-50" />}
+                                {isExpanded ? <ChevronUp size={20} className="shrink-0 text-brand-teal" /> : <ChevronDown size={20} className="shrink-0 opacity-50" />}
                               </div>
                               
                               <AnimatePresence>
@@ -1534,6 +1534,11 @@ const ProgramManager = () => {
                                     transition={{ duration: 0.3, ease: "easeInOut" }}
                                     className="overflow-hidden"
                                   >
+                                    <div className="mb-4">
+                                      <span className="inline-block border border-white/30 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-widest text-white/70 shadow-xs">
+                                        {artist.tag}
+                                      </span>
+                                    </div>
                                     <p className="text-sm opacity-90 leading-relaxed mb-6 font-light">{artist.desc}</p>
                                     {artist.video && (
                                       <div className="mb-6 rounded-xl overflow-hidden aspect-video bg-black/20 border border-white/10 shadow-inner">
@@ -1555,12 +1560,6 @@ const ProgramManager = () => {
                                   </motion.div>
                                 )}
                               </AnimatePresence>
-
-                              <div className="mt-auto">
-                                <span className="inline-block border border-white/30 px-2 py-0.5 rounded text-xs font-bold uppercase tracking-widest text-white shadow-xs">
-                                  {artist.tag}
-                                </span>
-                              </div>
                             </div>
                           </motion.div>
                         );
@@ -1581,9 +1580,9 @@ const ProgramManager = () => {
                               </div>
                             )}
                             <div className="p-6 flex-1 flex flex-col">
-                              <div className="flex items-center justify-between gap-3 mb-4">
-                                <div className="flex items-center gap-3">
-                                  <div className={`transition-opacity ${isExpanded ? 'opacity-100 text-brand-teal' : 'opacity-30 group-hover:opacity-100'}`}>
+                              <div className={`flex items-center justify-between gap-3 ${isExpanded ? 'mb-4' : 'mb-0'}`}>
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <div className={`shrink-0 transition-opacity ${isExpanded ? 'opacity-100 text-brand-teal' : 'opacity-30 group-hover:opacity-100'}`}>
                                     {(() => {
                                        const IconData = COMMUNITY_ICONS.find(i => i.id === artist.icon);
                                        const Icon = IconData ? IconData.icon : Music;
@@ -1594,7 +1593,7 @@ const ProgramManager = () => {
                                     {artist.name}
                                   </div>
                                 </div>
-                                {isExpanded ? <ChevronUp size={20} className="text-brand-teal" /> : <ChevronDown size={20} className="opacity-50" />}
+                                {isExpanded ? <ChevronUp size={20} className="shrink-0 text-brand-teal" /> : <ChevronDown size={20} className="shrink-0 opacity-50" />}
                               </div>
                               
                               <AnimatePresence>
@@ -1606,6 +1605,11 @@ const ProgramManager = () => {
                                     transition={{ duration: 0.3, ease: "easeInOut" }}
                                     className="overflow-hidden"
                                   >
+                                    <div className="mb-4">
+                                      <span className="inline-block border border-white/30 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-widest text-white/70 shadow-xs">
+                                        {artist.tag}
+                                      </span>
+                                    </div>
                                     <p className="text-sm opacity-90 leading-relaxed mb-6 font-light">{artist.desc}</p>
                                     {artist.video && (
                                       <div className="mb-6 rounded-xl overflow-hidden aspect-video bg-black/20 border border-white/10 shadow-inner">
@@ -1627,12 +1631,6 @@ const ProgramManager = () => {
                                   </motion.div>
                                 )}
                               </AnimatePresence>
-
-                              <div className="mt-auto">
-                                <span className="inline-block border border-white/30 px-2 py-0.5 rounded text-xs font-bold uppercase tracking-widest text-white shadow-xs">
-                                  {artist.tag}
-                                </span>
-                              </div>
                             </div>
                           </motion.div>
                         );
