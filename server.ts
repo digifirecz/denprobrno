@@ -117,6 +117,7 @@ async function startServer() {
       const faviconUrl = settings.faviconUrl || '';
       const logoUrl = settings.logoPassive || '';
       const heroImageUrl = heroData.imageUrl || '';
+      const gaMeasurementId = settings.gaMeasurementId || '';
 
       // Perform replacements with more robust regex (case insensitive, handles spacing)
       let html = template
@@ -124,6 +125,20 @@ async function startServer() {
         .replace(/<meta\s+name=["']description["']\s+content=["'][\s\S]*?["']\s*\/?>/i, `<meta name="description" content="${description}" />`)
         .replace(/<meta\s+property=["']og:title["']\s+content=["'][\s\S]*?["']\s*\/?>/i, `<meta property="og:title" content="${ogTitle}" />`)
         .replace(/<meta\s+property=["']og:description["']\s+content=["'][\s\S]*?["']\s*\/?>/i, `<meta property="og:description" content="${ogDescription}" />`);
+
+      // Inject Google Analytics if measurement ID is present
+      let gaScript = '';
+      if (gaMeasurementId) {
+        gaScript = `
+    <script async src="https://www.googletagmanager.com/gtag/js?id=${gaMeasurementId}"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', '${gaMeasurementId}');
+    </script>`;
+      }
+      html = html.replace('{{GA_SCRIPT}}', gaScript);
 
       // Inject preloads for critical images
       let preloadTags = '';

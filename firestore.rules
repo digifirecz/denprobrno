@@ -18,10 +18,14 @@ service cloud.firestore {
 
     function isAdmin() {
       return isSignedIn() && (
+        // Explicitly allow the primary owners even if verification flag is missing in dev
         ('email' in request.auth.token && request.auth.token.email.lower() == 'filipmachala88@gmail.com') ||
-        ('email' in request.auth.token && request.auth.token.email.lower() == 'admin@denprobrno.cz') ||
-        ('email' in request.auth.token && request.auth.token.email.lower().matches('.*@admin\\.cz$')) ||
-        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+        ('email' in request.auth.token && request.auth.token.email.lower() == 'info@denprobrno.cz') ||
+        (isEmailVerified() && (
+          ('email' in request.auth.token && request.auth.token.email.lower() == 'admin@denprobrno.cz') ||
+          ('email' in request.auth.token && request.auth.token.email.lower().matches('.*@admin\\.cz$')) ||
+          exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+        ))
       );
     }
 
@@ -148,6 +152,24 @@ service cloud.firestore {
     function isValidGlobalSettings(data) {
       return (!('logoPassive' in data) || (data.logoPassive is string && data.logoPassive.size() <= 1000)) &&
              (!('logoActive' in data) || (data.logoActive is string && data.logoActive.size() <= 1000)) &&
+             (!('title' in data) || (data.title is string && data.title.size() <= 500)) &&
+             (!('description' in data) || (data.description is string && data.description.size() <= 2000)) &&
+             (!('ogTitle' in data) || (data.ogTitle is string && data.ogTitle.size() <= 500)) &&
+             (!('ogDescription' in data) || (data.ogDescription is string && data.ogDescription.size() <= 2000)) &&
+             (!('ogImageUrl' in data) || (data.ogImageUrl is string && data.ogImageUrl.size() <= 2000)) &&
+             (!('ogImageAlt' in data) || (data.ogImageAlt is string && data.ogImageAlt.size() <= 1000)) &&
+             (!('faviconUrl' in data) || (data.faviconUrl is string && data.faviconUrl.size() <= 2000)) &&
+             (!('faviconAlt' in data) || (data.faviconAlt is string && data.faviconAlt.size() <= 1000)) &&
+             (!('logoPassiveAlt' in data) || (data.logoPassiveAlt is string && data.logoPassiveAlt.size() <= 1000)) &&
+             (!('logoActiveAlt' in data) || (data.logoActiveAlt is string && data.logoActiveAlt.size() <= 1000)) &&
+             (!('primaryDomain' in data) || (data.primaryDomain is string && data.primaryDomain.size() <= 500)) &&
+             (!('gaMeasurementId' in data) || (data.gaMeasurementId is string && data.gaMeasurementId.size() <= 100)) &&
+             (!('copyright' in data) || (data.copyright is string && data.copyright.size() <= 1000)) &&
+             (!('eventDate' in data) || (data.eventDate is string && data.eventDate.size() <= 200)) &&
+             (!('eventStartTime' in data) || (data.eventStartTime is string && data.eventStartTime.size() <= 100)) &&
+             (!('eventEndTime' in data) || (data.eventEndTime is string && data.eventEndTime.size() <= 100)) &&
+             (!('eventLocationName' in data) || (data.eventLocationName is string && data.eventLocationName.size() <= 1000)) &&
+             (!('eventCity' in data) || (data.eventCity is string && data.eventCity.size() <= 500)) &&
              (!('updatedAt' in data) || data.updatedAt is timestamp);
     }
 
@@ -244,19 +266,18 @@ service cloud.firestore {
 
     match /settings/{doc} {
       allow read: if true;
-      allow update: if doc == 'stats' && 
+      allow update: if (doc == 'stats' && 
         incoming().diff(existing()).affectedKeys().hasOnly(['totalVisits', 'lastVisit']) &&
         incoming().totalVisits is number &&
-        incoming().lastVisit == request.time;
-      allow create: if doc == 'stats' &&
-        incoming().keys().hasOnly(['totalVisits', 'lastVisit']) &&
+        incoming().lastVisit == request.time) ||
+        (isAdmin() && (doc != 'global' || isValidGlobalSettings(incoming())));
+      allow create: if (doc == 'stats' &&
+        incoming().keys().hasAll(['totalVisits', 'lastVisit']) &&
+        incoming().keys().size() == 2 &&
         incoming().totalVisits is number &&
-        incoming().lastVisit == request.time;
-      allow write: if isSignedIn() && (
-        ('email' in request.auth.token && request.auth.token.email.lower() == "filipmachala88@gmail.com") ||
-        ('email' in request.auth.token && request.auth.token.email.lower() == "admin@denprobrno.cz") ||
-        isAdmin()
-      );
+        incoming().lastVisit == request.time) ||
+        (isAdmin() && (doc != 'global' || isValidGlobalSettings(incoming())));
+      allow delete: if isAdmin();
     }
 
     match /contactSubmissions/{id} {

@@ -1,7 +1,8 @@
 import { motion, useScroll, AnimatePresence } from 'motion/react';
 import { useRef, useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { db } from '../lib/firebase';
-import { collection, onSnapshot, query, orderBy, doc, addDoc, serverTimestamp, setDoc, getDoc } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, doc, addDoc, serverTimestamp, setDoc, getDoc, increment } from 'firebase/firestore';
 import { 
   MapPin, 
   Calendar, 
@@ -516,7 +517,7 @@ export default function Home() {
       try {
         const visitRef = doc(db, 'settings', 'stats');
         await setDoc(visitRef, { 
-          totalVisits: (await import('firebase/firestore')).increment(1),
+          totalVisits: increment(1),
           lastVisit: serverTimestamp()
         }, { merge: true });
       } catch (e) {
@@ -527,10 +528,16 @@ export default function Home() {
     
     // Load GA Script
     const loadGA = async () => {
+      const consent = localStorage.getItem('cookie-consent');
+      if (consent !== 'accepted') return;
+
       const settingsDoc = await getDoc(doc(db, 'settings', 'global'));
       if (settingsDoc.exists()) {
         const gaId = settingsDoc.data().gaMeasurementId;
         if (gaId) {
+          // Check if already loaded
+          if (document.querySelector('script[src*="googletagmanager.com/gtag/js"]')) return;
+
           const script = document.createElement('script');
           script.src = `https://www.googletagmanager.com/gtag/js?id=${gaId}`;
           script.async = true;
@@ -543,7 +550,12 @@ export default function Home() {
         }
       }
     };
+    
     loadGA();
+
+    // Listen for consent updates
+    window.addEventListener('cookie-consent-updated', loadGA);
+    return () => window.removeEventListener('cookie-consent-updated', loadGA);
   }, []);
 
   // Fetch Intro Info Items
@@ -1528,39 +1540,16 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="space-y-8 pt-6 border-t border-white/10">
-              <p className="text-sm font-bold uppercase tracking-[0.3em] text-white/30">Kontakt</p>
-              <div className="flex flex-col gap-8">
-                <a href={contactInfo.email ? `mailto:${contactInfo.email}` : '#'} className="flex items-center gap-6 group">
-                  <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center text-white/40 group-hover:bg-brand-teal group-hover:text-black transition-all shadow-lg">
-                    <Mail size={28} />
+            <div className="flex flex-col gap-6 pt-10 border-t border-white/10">
+              <div className="flex flex-wrap items-center gap-x-12 gap-y-4">
+                <div className="flex items-center gap-4">
+                  <Heart size={20} className="text-brand-red animate-pulse" />
+                  <div className="text-[10px] font-black uppercase tracking-[0.5em] text-white/30 flex flex-col gap-3">
+                    <Link to="/gdpr" className="text-white/80 hover:text-brand-teal transition-all border-b border-white/20 hover:border-brand-teal/50 self-start pb-0.5 tracking-widest">
+                      Ochrana soukromí
+                    </Link>
+                    <p>{globalSettings.copyright}</p>
                   </div>
-                  <div className="flex flex-col">
-                    <span className="text-xs font-bold uppercase tracking-widest text-white/30 mb-1">Napište nám</span>
-                    <span className="text-xl font-medium tracking-tight text-white group-hover:text-brand-teal transition-colors">
-                      {contactInfo.email || "E-mail připravujeme"}
-                    </span>
-                  </div>
-                </a>
-                <a href={contactInfo.phone ? `tel:${contactInfo.phone.replace(/\s/g, '')}` : '#'} className="flex items-center gap-6 group">
-                  <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center text-white/40 group-hover:bg-brand-teal group-hover:text-black transition-all shadow-lg">
-                    <Phone size={28} />
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-xs font-bold uppercase tracking-widest text-white/30 mb-1">Zavolejte nám</span>
-                    <span className="text-xl font-medium tracking-tight text-white group-hover:text-brand-teal transition-colors">
-                      {contactInfo.phone || "Telefon připravujeme"}
-                    </span>
-                  </div>
-                </a>
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-4 pt-10 border-t border-white/10">
-              <div className="flex items-center gap-4">
-                <Heart size={24} className="text-brand-red animate-pulse" />
-                <div className="text-[10px] font-black uppercase tracking-[0.5em] text-white/30">
-                  <p>{globalSettings.copyright}</p>
                 </div>
               </div>
               <div className="text-[10px] font-bold uppercase tracking-widest text-white/30">
@@ -1595,7 +1584,7 @@ export default function Home() {
                 ) : (
                   <form className="grid grid-cols-1 md:grid-cols-2 gap-6" onSubmit={handleContactSubmit}>
                     <div className="space-y-2">
-                      <label className="text-[10px] font-bold uppercase tracking-widest text-white/40 ml-1">Jméno</label>
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-white/40 ml-1">Jméno *</label>
                       <input 
                         required
                         type="text" 
@@ -1606,7 +1595,7 @@ export default function Home() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-[10px] font-bold uppercase tracking-widest text-white/40 ml-1">E-mail</label>
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-white/40 ml-1">E-mail *</label>
                       <input 
                         required
                         type="email" 
@@ -1617,7 +1606,7 @@ export default function Home() {
                       />
                     </div>
                     <div className="md:col-span-2 space-y-2">
-                      <label className="text-[10px] font-bold uppercase tracking-widest text-white/40 ml-1">Zpráva</label>
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-white/40 ml-1">Zpráva *</label>
                       <textarea 
                         required
                         rows={4}
@@ -1638,6 +1627,31 @@ export default function Home() {
                     </div>
                   </form>
                 )}
+
+                <div className="mt-12 pt-8 border-t border-white/10 flex flex-col md:flex-row md:items-center gap-8 md:gap-12">
+                  <a href={contactInfo.email ? `mailto:${contactInfo.email}` : '#'} className="flex items-center gap-4 group">
+                    <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center text-white/40 group-hover:bg-brand-teal group-hover:text-black transition-all shadow-lg">
+                      <Mail size={20} />
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-white/30 mb-0.5">Napište nám</span>
+                      <span className="text-base font-medium tracking-tight text-white group-hover:text-brand-teal transition-colors">
+                        {contactInfo.email || "E-mail připravujeme"}
+                      </span>
+                    </div>
+                  </a>
+                  <a href={contactInfo.phone ? `tel:${contactInfo.phone.replace(/\s/g, '')}` : '#'} className="flex items-center gap-4 group">
+                    <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center text-white/40 group-hover:bg-brand-teal group-hover:text-black transition-all shadow-lg">
+                      <Phone size={20} />
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-white/30 mb-0.5">Zavolejte nám</span>
+                      <span className="text-base font-medium tracking-tight text-white group-hover:text-brand-teal transition-colors">
+                        {contactInfo.phone || "Telefon připravujeme"}
+                      </span>
+                    </div>
+                  </a>
+                </div>
               </div>
             </motion.div>
           </div>

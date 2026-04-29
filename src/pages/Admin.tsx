@@ -14,10 +14,11 @@ import {
   query, 
   orderBy,
   serverTimestamp,
-  setDoc
+  setDoc,
+  writeBatch
 } from 'firebase/firestore';
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence, Reorder } from 'motion/react';
 import { 
   BarChart3, 
   Users, 
@@ -35,6 +36,7 @@ import {
   Edit,
   Trash2,
   X,
+  GripVertical,
   Youtube,
   Type,
   Palette,
@@ -118,10 +120,10 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
   }
   
   if (isAuthError) {
-    console.warn('Authentication/Permission Error: ', errorMessage);
+    console.warn(`Authentication/Permission Error at ${path}: `, errorMessage);
     // Only show toast and redirect if we haven't already started the process
     if (!window.location.pathname.includes('/login')) {
-      toast.error("Vaše relace vypršela nebo nemáte dostatečná oprávnění. Přihlaste se prosím znovu.");
+      toast.error(`Relace vypršela nebo chybí oprávnění (${path}). Přihlaste se prosím znovu.`);
       
       // Sign out to clean up state and redirect
       signOut(auth).finally(() => {
@@ -231,13 +233,21 @@ interface InfoHeader {
   description: string;
 }
 
+interface AboutSectionItem {
+  id: string;
+  name: string;
+  description: string;
+  link?: string;
+  image?: string;
+}
+
 interface AboutSection {
   id: string;
   tag: string;
   title: string;
   description: string;
   size?: 'small' | 'large';
-  items?: { name: string; description: string; link?: string; image?: string }[];
+  items?: AboutSectionItem[];
   order: number;
 }
 
@@ -3940,7 +3950,7 @@ const AboutManager = () => {
         title: section.title, 
         description: section.description, 
         size: section.size || 'small',
-        items: section.items || [],
+        items: (section.items || []).map(item => ({ ...item, id: item.id || Math.random().toString(36).substring(2, 9) })),
         order: section.order 
       });
     } else {
@@ -4016,6 +4026,20 @@ const AboutManager = () => {
       toast.error("Chyba při ukládání záhlaví: " + (err.message || "Neznámá chyba"));
     } finally {
       setIsHeaderSubmitting(false);
+    }
+  };
+
+  const handleReorder = async (newOrder: AboutSection[]) => {
+    setSections(newOrder);
+    try {
+      const batch = writeBatch(db);
+      newOrder.forEach((section, index) => {
+        batch.update(doc(db, 'aboutSections', section.id), { order: index });
+      });
+      await batch.commit();
+    } catch (err) {
+      console.error("Reorder failed:", err);
+      toast.error("Nepodařilo se uložit pořadí");
     }
   };
 
@@ -4145,27 +4169,41 @@ const AboutManager = () => {
           </div>
 
           {/* Management Grid */}
-          <div className="p-4 bg-slate-50 grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Reorder.Group 
+            axis="y" 
+            values={sections} 
+            onReorder={handleReorder}
+            className="p-4 bg-slate-50 space-y-3"
+          >
             {sections.map((s) => (
-              <div key={s.id} className="bg-white p-4 rounded-2xl border border-slate-200 flex items-center justify-between group shadow-sm transition-all hover:border-brand-teal/50">
-                <div className="flex items-center gap-4 min-w-0">
-                  <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-400 group-hover:text-brand-teal transition-colors flex-shrink-0">
-                    <Heart size={18} />
+              <Reorder.Item 
+                key={s.id} 
+                value={s}
+                className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm transition-all hover:border-brand-teal/50 select-none"
+              >
+                <div className="flex items-center justify-between group">
+                  <div className="flex items-center gap-4 min-w-0">
+                    <div className="cursor-grab active:cursor-grabbing p-2 -ml-2 text-slate-300 hover:text-slate-500 transition-colors shrink-0">
+                      <GripVertical size={20} />
+                    </div>
+                    <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-400 group-hover:text-brand-teal transition-colors flex-shrink-0">
+                      <Heart size={18} />
+                    </div>
+                    <div className="min-w-0">
+                      <h4 className="text-sm font-black text-slate-900 truncate tracking-tighter">{s.title}</h4>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">
+                        {s.size === 'large' ? 'Velká sekce' : 'Malá sekce'}
+                      </p>
+                    </div>
                   </div>
-                  <div className="min-w-0">
-                    <h4 className="text-sm font-black text-slate-900 truncate tracking-tighter">{s.title}</h4>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">
-                      {s.size === 'large' ? 'Velká sekce' : 'Malá sekce'}
-                    </p>
+                  <div className="flex gap-1 ml-4 shrink-0">
+                    <button onClick={() => handleOpenModal(s)} className="p-2 text-slate-400 hover:text-brand-teal hover:bg-slate-50 rounded-lg transition-all"><Edit size={16} /></button>
+                    <button onClick={() => { setSectionToDelete(s); setIsDeleteModalOpen(true); }} className="p-2 text-slate-400 hover:text-brand-red hover:bg-slate-50 rounded-lg transition-all"><Trash2 size={16} /></button>
                   </div>
                 </div>
-                <div className="flex gap-1 ml-4">
-                  <button onClick={() => handleOpenModal(s)} className="p-2 text-slate-400 hover:text-brand-teal hover:bg-slate-50 rounded-lg transition-all"><Edit size={16} /></button>
-                  <button onClick={() => { setSectionToDelete(s); setIsDeleteModalOpen(true); }} className="p-2 text-slate-400 hover:text-brand-red hover:bg-slate-50 rounded-lg transition-all"><Trash2 size={16} /></button>
-                </div>
-              </div>
+              </Reorder.Item>
             ))}
-          </div>
+          </Reorder.Group>
         </div>
       </div>
       </section>
@@ -4248,28 +4286,38 @@ const AboutManager = () => {
                         <h4 className="text-sm font-black uppercase tracking-tighter text-slate-900">Seznam položek</h4>
                         <button 
                           type="button"
-                          onClick={() => setFormData({...formData, items: [...formData.items, { name: '', description: '', link: '' }]})}
+                          onClick={() => setFormData({...formData, items: [...formData.items, { id: Math.random().toString(36).substring(2, 9), name: '', description: '', link: '' }]})}
                           className="px-3 py-1.5 bg-slate-50 text-slate-400 rounded-lg font-bold uppercase text-[8px] tracking-widest hover:bg-slate-100 transition-all flex items-center gap-1"
                         >
                           <Plus size={10} /> Přidat položku
                         </button>
                       </div>
 
-                      <div className="space-y-4">
+                      <Reorder.Group 
+                        axis="y" 
+                        values={formData.items} 
+                        onReorder={(newItems) => setFormData({...formData, items: newItems})}
+                        className="space-y-4"
+                      >
                         {formData.items.map((item, idx) => (
-                          <div key={idx} className="p-4 bg-slate-50 rounded-2xl border border-slate-100 relative group">
-                            <button 
-                              type="button"
-                              onClick={() => {
-                                const newItems = [...formData.items];
-                                newItems.splice(idx, 1);
-                                setFormData({...formData, items: newItems});
-                              }}
-                              className="absolute top-4 right-4 p-2 text-slate-400 hover:text-brand-red transition-colors"
-                            >
-                              <Trash2 size={16} />
-                            </button>
-                            <div className="flex gap-4 items-start">
+                          <Reorder.Item key={item.id} value={item} className="p-4 bg-slate-50 rounded-2xl border border-slate-100 relative group select-none">
+                            <div className="absolute top-4 right-4 flex items-center gap-2">
+                              <div className="cursor-grab active:cursor-grabbing p-1 text-slate-300 hover:text-slate-500 transition-colors">
+                                <GripVertical size={16} />
+                              </div>
+                              <button 
+                                type="button"
+                                onClick={() => {
+                                  const newItems = [...formData.items];
+                                  newItems.splice(idx, 1);
+                                  setFormData({...formData, items: newItems});
+                                }}
+                                className="p-1 text-slate-400 hover:text-brand-red transition-colors"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </div>
+                            <div className="flex gap-4 items-start pr-12">
                               <div className="shrink-0 space-y-2">
                                 <div className="w-16 h-16 rounded-2xl bg-white border border-slate-200 overflow-hidden relative group/img">
                                   {item.image ? (
@@ -4289,7 +4337,7 @@ const AboutManager = () => {
                                 )}
                               </div>
 
-                              <div className="grid gap-3 flex-grow md:pr-8">
+                              <div className="grid gap-3 flex-grow">
                                 <div className="space-y-1 text-left">
                                   <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Název <span className="text-brand-red">*</span></label>
                                   <input required value={item.name} onChange={e => handleItemChange(idx, 'name', e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2 text-sm text-slate-900 outline-none focus:border-brand-teal" />
@@ -4304,9 +4352,9 @@ const AboutManager = () => {
                                 </div>
                               </div>
                             </div>
-                          </div>
+                          </Reorder.Item>
                         ))}
-                      </div>
+                      </Reorder.Group>
                     </div>
                   )}
                 </div>
@@ -4665,6 +4713,7 @@ const SettingsManager = () => {
   const handleSave = async () => {
     setIsSaving(true);
     try {
+      const path = "settings/global";
       await setDoc(doc(db, 'settings', 'global'), {
         logoPassive,
         logoActive,
@@ -4690,8 +4739,7 @@ const SettingsManager = () => {
       }, { merge: true });
       toast.success('Nastavení bylo úspěšně upraveno!');
     } catch (err) {
-      console.error(err);
-      toast.error('Chyba při ukládání');
+      handleFirestoreError(err, OperationType.WRITE, "settings/global");
     } finally {
       setIsSaving(false);
     }
@@ -4745,43 +4793,6 @@ const SettingsManager = () => {
                 className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all" 
                 placeholder="Krátký text pod titulkem při sdílení..."
               />
-            </div>
-          </div>
-          
-          <div className="space-y-4">
-            <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Náhledový obrázek pro sociální sítě (OG Image)</label>
-            <div className="p-6 bg-slate-50 rounded-2xl border border-slate-200 space-y-4">
-              <div className="flex items-center gap-6">
-                <div className="w-40 h-24 bg-white rounded-xl border border-dashed border-slate-200 flex items-center justify-center overflow-hidden shadow-inner">
-                  {isValidImageUrl(ogImageUrl) ? (
-                    <img 
-                      src={ogImageUrl} 
-                      alt={ogImageAlt} 
-                      className="max-h-full max-w-full object-cover" 
-                      onError={() => setOgImageUrl('')}
-                    />                
-                  ) : (
-                    <div className="flex flex-col items-center gap-1 text-slate-300">
-                      <ImageIcon size={24} />
-                      <span className="text-[8px] font-bold uppercase">1200x630px</span>
-                    </div>
-                  )}
-                </div>
-                <div className="flex-1 space-y-3">
-                  <input type="file" onChange={e => handleFileUpload(e, 'og')} className="text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:bg-brand-teal file:text-black hover:file:bg-brand-teal-light cursor-pointer" accept="image/*" />
-                  <p className="text-[9px] text-slate-400">Doporučený rozměr je 1200x630 pixelů pro optimální zobrazení na Facebooku a Instagramu.</p>
-                </div>
-                {isUploadingOg && <Loader2 className="animate-spin text-brand-teal" size={24} />}
-              </div>
-              <div className="space-y-1">
-                <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 ml-1">ALT text pro náhledový obrázek</label>
-                <input 
-                  value={ogImageAlt} 
-                  onChange={e => setOgImageAlt(e.target.value)} 
-                  className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2 text-sm text-slate-900 outline-none focus:border-brand-teal" 
-                  placeholder="Popis obrázku pro sociální sítě..."
-                />
-              </div>
             </div>
           </div>
           

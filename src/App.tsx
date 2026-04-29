@@ -3,10 +3,12 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { Toaster } from 'react-hot-toast';
 import { Loader2 } from 'lucide-react';
 import { AuthProvider, useAuth } from './context/AuthContext.tsx';
+import { CookieConsent } from './components/CookieConsent.tsx';
 import Home from './pages/Home.tsx';
 import Login from './pages/Login.tsx';
 import Admin from './pages/Admin.tsx';
 import User from './pages/User.tsx';
+import Privacy from './pages/Privacy.tsx';
 import NotFound from './pages/NotFound.tsx';
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -31,6 +33,7 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/" element={<Home />} />
+      <Route path="/gdpr" element={<Privacy />} />
       <Route path="/login" element={<Login />} />
       <Route 
         path="/admin/*" 
@@ -61,6 +64,7 @@ export default function App() {
         <AppRoutes />
       </Router>
       <Toaster position="bottom-right" />
+      <CookieConsent />
     </AuthProvider>
   );
 }
