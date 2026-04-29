@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { db } from '../lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 
@@ -10,6 +11,8 @@ declare global {
 }
 
 export function GoogleAnalytics() {
+  const location = useLocation();
+
   useEffect(() => {
     const fetchAndInitGA = async () => {
       try {
@@ -19,22 +22,24 @@ export function GoogleAnalytics() {
           const measurementId = data.gaMeasurementId;
 
           if (measurementId && typeof measurementId === 'string' && measurementId.trim() !== '') {
-            console.log('Initializing Google Analytics with ID:', measurementId);
-            
-            // Inject script tag
-            const script = document.createElement('script');
-            script.src = `https://www.googletagmanager.com/gtag/js?id=${measurementId}`;
-            script.async = true;
-            document.head.appendChild(script);
+            // Only inject script once
+            if (!document.getElementById('ga-script')) {
+              const script = document.createElement('script');
+              script.id = 'ga-script';
+              script.src = `https://www.googletagmanager.com/gtag/js?id=${measurementId}`;
+              script.async = true;
+              document.head.appendChild(script);
 
-            // Initialize gtag
-            window.dataLayer = window.dataLayer || [];
-            window.gtag = function() {
-              window.dataLayer.push(arguments);
-            };
-            window.gtag('js', new Date());
+              window.dataLayer = window.dataLayer || [];
+              window.gtag = function() {
+                window.dataLayer.push(arguments);
+              };
+              window.gtag('js', new Date());
+            }
+
+            // Send page view on every location change
             window.gtag('config', measurementId, {
-              page_path: window.location.pathname,
+              page_path: location.pathname + location.search,
             });
           }
         }
@@ -44,7 +49,7 @@ export function GoogleAnalytics() {
     };
 
     fetchAndInitGA();
-  }, []);
+  }, [location.pathname, location.search]);
 
   return null;
 }

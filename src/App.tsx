@@ -61,8 +61,8 @@ function AppRoutes() {
 export default function App() {
   return (
     <AuthProvider>
-      <GoogleAnalytics />
       <Router>
+        <GoogleAnalytics />
         <AppRoutes />
       </Router>
       <Toaster position="bottom-right" />
