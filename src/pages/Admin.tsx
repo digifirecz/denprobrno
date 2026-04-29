@@ -3914,10 +3914,10 @@ const AboutManager = () => {
                           <div className={`h-0.5 w-8 ${barColorClass}`} />
                           <p className={`text-xs font-black uppercase tracking-[0.4em] ${tagColorClass}`}>{section.tag}</p>
                         </div>
-                        <p className={`${isLarge ? 'text-3xl md:text-5xl' : 'text-2xl md:text-3xl'} font-sans font-bold leading-tight tracking-tighter whitespace-pre-wrap`}>
+                        <p className="text-2xl md:text-3xl font-sans font-bold leading-tight tracking-tighter whitespace-pre-wrap">
                           {section.title}
                         </p>
-                        <p className={`${isLarge ? 'text-xl' : 'text-lg'} text-white/80 leading-relaxed font-light whitespace-pre-wrap max-w-5xl`}>
+                        <p className="text-lg text-white/80 leading-relaxed font-light whitespace-pre-wrap max-w-5xl">
                           {section.description}
                         </p>
 
