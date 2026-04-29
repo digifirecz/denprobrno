@@ -33,10 +33,16 @@ Aplikace dynamicky aktualizuje meta-tagy (`<title>`, `description`, `og:image`, 
 
 ## Sestavení (Build) a Nasazení
 
-Pro vygenerování produkční verze aplikace (složka `dist`) použijte následující příkaz:
+Pro zprovoznění projektu lokálně nebo vygenerování produkční verze postupujte následovně:
 
-```bash
-npm run build
-```
+1. **Instalace závislostí:**
+   ```bash
+   npm install
+   ```
+
+2. **Produkční sestavení (složka `dist`):**
+   ```bash
+   npm run build
+   ```
 
 Tento příkaz spustí `vite build`, který optimalizuje a zkompiluje frontendový kód do statických souborů ve složce `dist/`. Tyto soubory jsou pak servírovány backendem (Express server v `server.ts`) v produkčním prostředí při nastavení `NODE_ENV=production`.

@@ -454,7 +454,7 @@ export default function Home() {
       if (snapshot.exists()) {
         setProgramHeader(snapshot.data() as ProgramHeader);
       }
-    });
+    }, (err) => console.error("Program Header Error:", err));
   }, []);
 
   // Fetch Info Header from Firestore
@@ -463,7 +463,7 @@ export default function Home() {
       if (snapshot.exists()) {
         setInfoHeader(snapshot.data() as InfoHeader);
       }
-    });
+    }, (err) => console.error("Info Header Error:", err));
   }, []);
 
   // Fetch About sections
@@ -471,7 +471,7 @@ export default function Home() {
     const q = query(collection(db, 'aboutSections'), orderBy('order', 'asc'));
     return onSnapshot(q, (snapshot) => {
       setAboutSections(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as AboutSection)));
-    });
+    }, (err) => console.error("About Sections Error:", err));
   }, []);
 
   // Fetch About Header
@@ -480,7 +480,7 @@ export default function Home() {
       if (snapshot.exists()) {
         setAboutHeader(snapshot.data() as AboutHeader);
       }
-    });
+    }, (err) => console.error("About Header Error:", err));
   }, []);
 
   // Fetch Contact Info from Firestore
@@ -490,7 +490,7 @@ export default function Home() {
         const data = snapshot.data();
         setContactInfo(prev => ({ ...prev, ...data }) as typeof contactInfo);
       }
-    });
+    }, (err) => console.error("Contact Info Error:", err));
   }, []);
 
   // Fetch Hero Settings
@@ -505,7 +505,7 @@ export default function Home() {
           quote: data.quote ?? 'Přijďte strávit den, který může něco změnit'
         });
       }
-    });
+    }, (err) => console.error("Hero Data Error:", err));
   }, []);
 
   // Fetch Intro Sections

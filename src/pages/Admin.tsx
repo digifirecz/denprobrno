@@ -1,3 +1,4 @@
+import UserPage from './User.tsx';
 import { toast } from 'react-hot-toast';
 import { Routes, Route, Link, useNavigate } from 'react-router-dom';
 import { signOut } from 'firebase/auth';
@@ -91,8 +92,13 @@ interface FirestoreErrorInfo {
 }
 
 function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
+  const errorMessage = error instanceof Error ? error.message : String(error);
+  const isAuthError = errorMessage.includes('auth/invalid-credential') || 
+                      errorMessage.includes('permission-denied') || 
+                      errorMessage.includes('Insufficient permissions');
+
   const errInfo: FirestoreErrorInfo = {
-    error: error instanceof Error ? error.message : String(error),
+    error: errorMessage,
     authInfo: {
       userId: auth.currentUser?.uid,
       email: auth.currentUser?.email,
@@ -108,8 +114,28 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
     path
   }
   console.error('Firestore Error: ', JSON.stringify(errInfo));
-  toast.error(`Chyba databáze: ${error instanceof Error ? error.message : String(error)}`);
+  
+  if (isAuthError) {
+    toast.error("Vaše relace vypršela nebo nemáte dostatečná oprávnění. Přesměrovávám na přihlášení...");
+    
+    // Sign out to prevent redirect loop in Login.tsx
+    signOut(auth).finally(() => {
+      setTimeout(() => {
+        window.location.href = '/login';
+      }, 2000);
+    });
+  } else {
+    toast.error(`Chyba databáze: ${errorMessage}`);
+  }
+  
   throw new Error(JSON.stringify(errInfo));
+}
+
+const getErrorMessage = (err: any, fallback: string) => {
+  const msg = err?.message || String(err);
+  if (msg.includes('auth/invalid-credential')) return "Relace vypršela. Přihlaste se prosím znovu.";
+  if (msg.includes('permission-denied')) return "Nedostatečná oprávnění.";
+  return `${fallback}: ${msg}`;
 }
 
 interface Artist {
@@ -4830,47 +4856,47 @@ export default function Admin() {
       if (snapshot.exists()) {
         setLogoPassive(snapshot.data().logoPassive || '');
       }
-    });
+    }, (err) => handleFirestoreError(err, OperationType.GET, 'settings/global'));
 
     const q1 = query(collection(db, 'musicProgram'));
     const unsub1 = onSnapshot(q1, (snapshot) => {
       setArtistsCount(snapshot.size);
-    });
+    }, (err) => handleFirestoreError(err, OperationType.LIST, 'musicProgram'));
 
     const q2 = query(collection(db, 'practicalInfo'));
     const unsub2 = onSnapshot(q2, (snapshot) => {
       setInfoCount(snapshot.size);
-    });
+    }, (err) => handleFirestoreError(err, OperationType.LIST, 'practicalInfo'));
 
     const q3 = query(collection(db, 'talkshows'));
     const unsub3 = onSnapshot(q3, (snapshot) => {
       setTalkshowsCount(snapshot.size);
-    });
+    }, (err) => handleFirestoreError(err, OperationType.LIST, 'talkshows'));
 
     const q4 = query(collection(db, 'familyProgram'));
     const unsub4 = onSnapshot(q4, (snapshot) => {
       setFamilyCount(snapshot.size);
-    });
+    }, (err) => handleFirestoreError(err, OperationType.LIST, 'familyProgram'));
 
     const q5 = query(collection(db, 'communitySections'));
     const unsub5 = onSnapshot(q5, (snapshot) => {
       setCommunityCount(snapshot.size);
-    });
+    }, (err) => handleFirestoreError(err, OperationType.LIST, 'communitySections'));
 
     const q6 = query(collection(db, 'aboutSections'));
     const unsub6 = onSnapshot(q6, (snapshot) => {
       setAboutCount(snapshot.size);
-    });
+    }, (err) => handleFirestoreError(err, OperationType.LIST, 'aboutSections'));
 
     const qLists = query(collection(db, 'festivalLists'));
     const unsubLists = onSnapshot(qLists, (snapshot) => {
       setListsCount(snapshot.size);
-    });
+    }, (err) => handleFirestoreError(err, OperationType.LIST, 'festivalLists'));
 
     const qSub = query(collection(db, 'contactSubmissions'));
     const unsubSub = onSnapshot(qSub, (snapshot) => {
       setSubmissionsCount(snapshot.size);
-    });
+    }, (err) => handleFirestoreError(err, OperationType.LIST, 'contactSubmissions'));
 
     return () => {
       unsubGlobal();
@@ -4885,15 +4911,25 @@ export default function Admin() {
     };
   }, []);
 
-  const handleLogout = async () => {
-    await signOut(auth);
-    navigate('/');
+  const handleLogout = async (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
+    try {
+      await signOut(auth);
+      navigate('/login');
+    } catch (error) {
+      console.error('Logout error:', error);
+      toast.error('Chyba při odhlašování');
+    }
   };
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-slate-900 flex flex-col md:flex-row">
       {/* Sidebar */}
-      <aside className="w-full md:w-72 brand-gradient border-r border-white/10 p-6 flex flex-col z-20 text-left text-white shadow-2xl">
+      <aside className="w-full md:w-72 brand-gradient border-r border-white/10 p-6 flex flex-col z-20 text-left text-white shadow-2xl relative">
         <div className="mb-12 flex items-center gap-4">
           <div className="flex items-center justify-center transition-all bg-white/5 p-2 rounded-2xl border border-white/10">
             {isValidImageUrl(logoPassive) && (
@@ -4934,19 +4970,23 @@ export default function Admin() {
           ))}
         </nav>
 
-        <div className="pt-6 border-t border-white/10 mt-6">
-          <div className="flex items-center gap-3 mb-6 p-2">
-            <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-[10px] font-bold">
+        <div className="pt-6 border-t border-white/10 mt-6 overflow-hidden">
+          <Link 
+            to="/admin/user"
+            className="flex items-center gap-3 mb-6 p-2 rounded-xl hover:bg-white/5 transition-colors group/profile w-full truncate"
+          >
+            <div className="w-8 h-8 rounded-full bg-white/20 shrink-0 flex items-center justify-center text-[10px] font-bold group-hover/profile:bg-brand-teal transition-colors group-hover/profile:text-black">
               {user?.email?.charAt(0).toUpperCase()}
             </div>
             <div className="flex flex-col min-w-0 text-left">
-              <span className="text-xs font-bold truncate">{user?.email}</span>
-              <span className="text-[10px] text-white/40 uppercase font-bold tracking-widest">Admin</span>
+              <span className="text-xs font-bold truncate group-hover/profile:text-brand-teal transition-colors">{user?.email}</span>
+              <span className="text-[10px] text-white/40 uppercase font-bold tracking-widest">Můj profil</span>
             </div>
-          </div>
+          </Link>
           <button 
+            type="button"
             onClick={handleLogout}
-            className="w-full flex items-center gap-4 px-4 py-3 rounded-xl font-bold text-xs uppercase tracking-widest text-white/60 hover:bg-white/10 hover:text-white transition-all"
+            className="w-full flex items-center gap-4 px-4 py-3 rounded-xl font-bold text-xs uppercase tracking-widest text-white/60 hover:bg-white/10 hover:text-white transition-all cursor-pointer relative z-50 border-none bg-transparent"
           >
             <LogOut size={18} /> Odhlásit se
           </button>
@@ -4967,6 +5007,7 @@ export default function Admin() {
           <Route path="/info" element={<PracticalInfoManager />} />
           <Route path="/contact" element={<ContactManager />} />
           <Route path="/settings" element={<SettingsManager />} />
+          <Route path="/user" element={<UserPage />} />
         </Routes>
       </main>
     </div>

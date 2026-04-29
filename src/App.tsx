@@ -1,16 +1,29 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
+import { Loader2 } from 'lucide-react';
 import { AuthProvider, useAuth } from './context/AuthContext.tsx';
 import Home from './pages/Home.tsx';
 import Login from './pages/Login.tsx';
 import Admin from './pages/Admin.tsx';
+import User from './pages/User.tsx';
 import NotFound from './pages/NotFound.tsx';
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading } = useAuth();
-  if (loading) return null;
-  if (!user) return <Navigate to="/login" />;
+  
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-brand-red flex items-center justify-center">
+        <Loader2 className="animate-spin text-brand-teal" size={48} />
+      </div>
+    );
+  }
+  
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+  
   return <>{children}</>;
 };
 
@@ -21,6 +34,15 @@ function AppRoutes() {
       <Route path="/login" element={<Login />} />
       <Route 
         path="/admin/*" 
+        element={
+          <ProtectedRoute>
+            <Admin />
+          </ProtectedRoute>
+        } 
+      />
+      {/* Explicitly handle the base /admin route as well if path="/admin/*" has issues in some edge cases */}
+      <Route 
+        path="/admin" 
         element={
           <ProtectedRoute>
             <Admin />

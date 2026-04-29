@@ -244,6 +244,14 @@ service cloud.firestore {
 
     match /settings/{doc} {
       allow read: if true;
+      allow update: if doc == 'stats' && 
+        incoming().diff(existing()).affectedKeys().hasOnly(['totalVisits', 'lastVisit']) &&
+        incoming().totalVisits is number &&
+        incoming().lastVisit == request.time;
+      allow create: if doc == 'stats' &&
+        incoming().keys().hasOnly(['totalVisits', 'lastVisit']) &&
+        incoming().totalVisits is number &&
+        incoming().lastVisit == request.time;
       allow write: if isSignedIn() && (
         ('email' in request.auth.token && request.auth.token.email.lower() == "filipmachala88@gmail.com") ||
         ('email' in request.auth.token && request.auth.token.email.lower() == "admin@denprobrno.cz") ||
