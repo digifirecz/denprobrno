@@ -4512,12 +4512,6 @@ const SettingsManager = () => {
         updatedAt: serverTimestamp()
       }, { merge: true });
       toast.success('Nastavení bylo úspěšně upraveno!');
-      // Apply changes locally
-      document.title = siteTitle;
-      const link: HTMLLinkElement = document.querySelector("link[rel~='icon']") || document.createElement('link');
-      link.rel = 'icon';
-      link.href = faviconUrl;
-      document.head.appendChild(link);
     } catch (err) {
       console.error(err);
       toast.error('Chyba při ukládání');

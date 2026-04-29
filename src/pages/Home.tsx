@@ -364,16 +364,6 @@ export default function Home() {
         if (data.ogTitle) updateMeta('twitter:title', data.ogTitle);
         if (data.ogDescription) updateMeta('twitter:description', data.ogDescription);
         if (data.ogImageUrl) updateMeta('twitter:image', data.ogImageUrl);
-
-        if (data.faviconUrl) {
-          let link = document.querySelector("link[rel~='icon']") as HTMLLinkElement;
-          if (!link) {
-            link = document.createElement('link');
-            link.rel = 'icon';
-            document.head.appendChild(link);
-          }
-          link.href = data.faviconUrl;
-        }
       }
     });
   }, []);
