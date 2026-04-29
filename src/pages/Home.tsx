@@ -43,6 +43,7 @@ interface Artist {
   desc: string;
   video?: string;
   icon?: string;
+  imageUrl?: string;
 }
 
 interface PracticalInfo {
@@ -95,6 +96,8 @@ interface FamilyProgram {
 interface CommunityItem {
   name: string;
   description: string;
+  image?: string;
+  link?: string;
 }
 
 interface CommunitySection {
@@ -886,15 +889,21 @@ export default function Home() {
                         {...fadeInUp}
                         transition={{ ...fadeInUp.transition, delay: (i * 2) * 0.05 }}
                         onClick={() => setExpandedArtist(isExpanded ? null : item.id)}
-                        className={`bg-brand-red text-white border border-brand-red/10 rounded-2xl p-6 hover:bg-brand-red-dark transition-all duration-300 group cursor-pointer flex flex-col ${isExpanded ? 'ring-2 ring-brand-teal/50' : ''}`}
+                        className={`bg-brand-red text-white border border-brand-red/10 rounded-2xl hover:bg-brand-red-dark transition-all duration-300 group cursor-pointer flex flex-col overflow-hidden ${isExpanded ? 'ring-2 ring-brand-teal/50' : ''}`}
                       >
-                        <div className="flex items-center justify-between gap-3 mb-4">
-                          <div className="flex items-center gap-3">
-                            <MusicIcon size={20} className={`transition-opacity ${isExpanded ? 'opacity-100 text-brand-teal' : 'opacity-30 group-hover:opacity-100'}`} />
-                            <h4 className="text-xl font-bold tracking-tight font-sans transition-colors group-hover:text-brand-teal">{item.name}</h4>
+                        {item.imageUrl && (
+                          <div className="w-full h-40 overflow-hidden bg-white/5 border-b border-white/10">
+                            <img src={item.imageUrl} alt={item.name} className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-700" referrerPolicy="no-referrer" />
                           </div>
-                          {isExpanded ? <ChevronUp size={20} className="text-brand-teal" /> : <ChevronDown size={20} className="opacity-50" />}
-                        </div>
+                        )}
+                        <div className="p-6 flex-1 flex flex-col">
+                          <div className="flex items-center justify-between gap-3 mb-4">
+                            <div className="flex items-center gap-3">
+                              <MusicIcon size={20} className={`transition-opacity ${isExpanded ? 'opacity-100 text-brand-teal' : 'opacity-30 group-hover:opacity-100'}`} />
+                              <h4 className="text-xl font-bold tracking-tight font-sans transition-colors group-hover:text-brand-teal">{item.name}</h4>
+                            </div>
+                            {isExpanded ? <ChevronUp size={20} className="text-brand-teal" /> : <ChevronDown size={20} className="opacity-50" />}
+                          </div>
 
                         <AnimatePresence>
                           {isExpanded && (
@@ -931,6 +940,7 @@ export default function Home() {
                           <span className="inline-block border border-white/30 px-2 py-0.5 rounded text-xs font-bold uppercase tracking-widest text-white shadow-xs">
                             {item.tag}
                           </span>
+                        </div>
                         </div>
                       </motion.div>
                     );
@@ -946,15 +956,21 @@ export default function Home() {
                         {...fadeInUp}
                         transition={{ ...fadeInUp.transition, delay: (i * 2 + 1) * 0.05 }}
                         onClick={() => setExpandedArtist(isExpanded ? null : item.id)}
-                        className={`bg-brand-red text-white border border-brand-red/10 rounded-2xl p-6 hover:bg-brand-red-dark transition-all duration-300 group cursor-pointer flex flex-col ${isExpanded ? 'ring-2 ring-brand-teal/50' : ''}`}
+                        className={`bg-brand-red text-white border border-brand-red/10 rounded-2xl hover:bg-brand-red-dark transition-all duration-300 group cursor-pointer flex flex-col overflow-hidden ${isExpanded ? 'ring-2 ring-brand-teal/50' : ''}`}
                       >
-                        <div className="flex items-center justify-between gap-3 mb-4">
-                          <div className="flex items-center gap-3">
-                            <MusicIcon size={20} className={`transition-opacity ${isExpanded ? 'opacity-100 text-brand-teal' : 'opacity-30 group-hover:opacity-100'}`} />
-                            <h4 className="text-xl font-bold tracking-tight font-sans transition-colors group-hover:text-brand-teal">{item.name}</h4>
+                        {item.imageUrl && (
+                          <div className="w-full h-40 overflow-hidden bg-white/5 border-b border-white/10">
+                            <img src={item.imageUrl} alt={item.name} className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-700" referrerPolicy="no-referrer" />
                           </div>
-                          {isExpanded ? <ChevronUp size={20} className="text-brand-teal" /> : <ChevronDown size={20} className="opacity-50" />}
-                        </div>
+                        )}
+                        <div className="p-6 flex-1 flex flex-col">
+                          <div className="flex items-center justify-between gap-3 mb-4">
+                            <div className="flex items-center gap-3">
+                              <MusicIcon size={20} className={`transition-opacity ${isExpanded ? 'opacity-100 text-brand-teal' : 'opacity-30 group-hover:opacity-100'}`} />
+                              <h4 className="text-xl font-bold tracking-tight font-sans transition-colors group-hover:text-brand-teal">{item.name}</h4>
+                            </div>
+                            {isExpanded ? <ChevronUp size={20} className="text-brand-teal" /> : <ChevronDown size={20} className="opacity-50" />}
+                          </div>
 
                         <AnimatePresence>
                           {isExpanded && (
@@ -991,6 +1007,7 @@ export default function Home() {
                           <span className="inline-block border border-white/30 px-2 py-0.5 rounded text-xs font-bold uppercase tracking-widest text-white shadow-xs">
                             {item.tag}
                           </span>
+                        </div>
                         </div>
                       </motion.div>
                     );
@@ -1049,17 +1066,17 @@ export default function Home() {
                           {(item.guestsTitle || item.guests?.some(g => g.name || g.role)) && (
                             <div className="flex-1 space-y-6 w-full">
                               {item.guestsTitle && <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/40">{item.guestsTitle}</p>}
-                              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-y-8 gap-x-12">
+                              <div className="flex flex-wrap gap-y-8 gap-x-12">
                                 {item.guests?.map((guest, gi) => (
                                   (guest.name || guest.role) && (
-                                    <div key={gi} className="group">
+                                    <div key={gi} className="group shrink-0 max-w-[200px] flex flex-col items-center text-center">
                                       {guest.imageUrl && (
-                                        <div className="w-14 h-14 rounded-full overflow-hidden mb-4 bg-white/10 border border-white/10 shrink-0">
-                                          <img src={guest.imageUrl} alt={guest.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                                        <div className="w-28 h-28 rounded-full overflow-hidden mb-4 bg-white/10 border-2 border-white/20 shrink-0 shadow-lg">
+                                          <img src={guest.imageUrl} alt={guest.name || 'host'} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                                         </div>
                                       )}
-                                      {guest.name && <p className="text-xl font-bold tracking-tight text-white">{guest.name}</p>}
-                                      {guest.role && <p className="text-sm text-white/50 font-medium">{guest.role}</p>}
+                                      {guest.name && <p className="text-xl font-bold tracking-tight text-white leading-tight">{guest.name}</p>}
+                                      {guest.role && <p className="text-sm text-white/50 font-medium mt-1 leading-snug">{guest.role}</p>}
                                     </div>
                                   )
                                 ))}
@@ -1070,11 +1087,11 @@ export default function Home() {
                           {/* Moderátor Box */}
                           {(item.moderatorName || item.moderatorRole) && (
                             <div className="w-full md:w-auto shrink-0">
-                              <div className="bg-white/10 rounded-3xl p-6 pr-16 border border-white/10 relative min-w-[280px]">
+                              <div className="bg-white/10 rounded-3xl p-6 pr-36 border border-white/10 relative min-w-[320px]">
                                 <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/40 mb-3">Moderuje</p>
                                 {item.moderatorName && <p className="text-xl font-bold tracking-tight text-white mb-0.5">{item.moderatorName}</p>}
                                 {item.moderatorRole && <p className="text-sm text-white/50 font-medium">{item.moderatorRole}</p>}
-                                <div className="absolute right-6 top-1/2 -translate-y-1/2 w-14 h-14 rounded-full overflow-hidden border border-white/10 shrink-0 bg-white/5">
+                                <div className="absolute right-6 top-1/2 -translate-y-1/2 w-28 h-28 rounded-full overflow-hidden border-2 border-white/20 shrink-0 bg-white/5 shadow-lg">
                                   {item.moderatorImage ? (
                                     <img src={item.moderatorImage} alt={item.moderatorName} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                                   ) : (
@@ -1091,17 +1108,17 @@ export default function Home() {
 
                       {/* Závěrečné slovo */}
                       {item.closingWordName && (
-                        <div className="flex items-start gap-4 text-white pt-2">
-                          <div className="w-14 h-14 rounded-full bg-white/20 overflow-hidden flex items-center justify-center text-white text-xs font-black tracking-widest shrink-0 shadow-lg mt-1 border border-white/10">
+                        <div className="flex items-center gap-6 text-white pt-2">
+                          <div className="w-28 h-28 rounded-full bg-white/20 overflow-hidden flex items-center justify-center text-white text-xs font-black tracking-widest shrink-0 shadow-xl border-2 border-white/20">
                             {item.closingWordImage ? (
                               <img src={item.closingWordImage} alt={item.closingWordName} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                             ) : (
-                              item.closingWordName.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2)
+                              <span className="text-xl">{item.closingWordName.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2)}</span>
                             )}
                           </div>
                           <div className="text-left">
-                            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/40 mb-3 leading-none">Závěrečné slovo</p>
-                            <p className="text-xl font-bold tracking-tight text-white mb-0.5">{item.closingWordName}</p>
+                            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/40 mb-2 leading-none">Závěrečné slovo</p>
+                            <p className="text-2xl font-bold tracking-tight text-white mb-0.5">{item.closingWordName}</p>
                             {item.closingWordRole && (
                               <p className="text-sm text-white/50 font-medium">
                                 {item.closingWordRole}
@@ -1240,14 +1257,47 @@ export default function Home() {
                       </div>
                       
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        {(section.items || []).map((item, i) => (
-                          <div key={i} className="p-4 bg-black/10 rounded-2xl border border-white/5 hover:bg-black/20 transition-all text-left group/item">
-                            <span className="font-bold text-lg text-white tracking-tight block mb-0.5">{item.name}</span>
-                            <p className="text-[10px] font-black text-brand-yellow uppercase tracking-widest opacity-60 group-hover/item:opacity-100 transition-opacity">
-                              {item.description}
-                            </p>
-                          </div>
-                        ))}
+                        {(section.items || []).map((item, i) => {
+                          const itemContent = (
+                            <>
+                              {item.image && (
+                                <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white bg-white shrink-0 p-1 flex items-center justify-center">
+                                  <img src={item.image} className="w-full h-full object-contain" alt={item.name} referrerPolicy="no-referrer" />
+                                </div>
+                              )}
+                              <div className="text-left">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-bold text-lg text-white tracking-tight">{item.name}</span>
+                                  {item.link && <ExternalLink size={12} className="text-brand-teal shrink-0" />}
+                                </div>
+                                <p className="text-[10px] font-black text-brand-yellow uppercase tracking-widest opacity-60 group-hover/item:opacity-100 transition-opacity">
+                                  {item.description}
+                                </p>
+                              </div>
+                            </>
+                          );
+
+                          if (item.link) {
+                            const validLink = item.link.startsWith('http') ? item.link : `https://${item.link}`;
+                            return (
+                              <a 
+                                key={i} 
+                                href={validLink}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="p-4 bg-black/10 rounded-2xl border border-white/5 hover:bg-white/10 hover:border-white/20 transition-all text-left group/item flex items-center gap-4 cursor-pointer"
+                              >
+                                {itemContent}
+                              </a>
+                            );
+                          }
+
+                          return (
+                            <div key={i} className="p-4 bg-black/10 rounded-2xl border border-white/5 hover:bg-black/20 transition-all text-left group/item flex items-center gap-4">
+                              {itemContent}
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   );
@@ -1379,14 +1429,14 @@ export default function Home() {
                                   className="group/item flex gap-6 text-left items-start"
                                 >
                                   {item.image && (
-                                    <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white bg-white group-hover/item:border-brand-teal transition-colors shrink-0 p-1.5 flex items-center justify-center">
+                                    <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-white bg-white group-hover/item:border-brand-teal transition-colors shrink-0 p-2 flex items-center justify-center shadow-md">
                                       <img src={item.image} className="w-full h-full object-contain transition-all duration-500" alt={item.name} referrerPolicy="no-referrer" />
                                     </div>
                                   )}
                                   <div className="space-y-2 flex-1">
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex items-center justify-between w-full gap-2">
                                       <span className="text-xl font-bold text-white group-hover/item:text-brand-teal transition-colors tracking-tight">{item.name}</span>
-                                      <ExternalLink size={14} className="opacity-0 group-hover/item:opacity-100 transition-opacity text-brand-teal" />
+                                      <ExternalLink size={14} className="opacity-0 group-hover/item:opacity-100 transition-opacity text-brand-teal shrink-0" />
                                     </div>
                                     {item.description && <p className="text-sm text-white/70 leading-relaxed font-light whitespace-pre-wrap">{item.description}</p>}
                                   </div>
@@ -1394,7 +1444,7 @@ export default function Home() {
                               ) : (
                                 <div className="flex gap-6 text-left items-start">
                                   {item.image && (
-                                    <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white bg-white shrink-0 p-1.5 flex items-center justify-center">
+                                    <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-white bg-white shrink-0 p-2 flex items-center justify-center shadow-md">
                                       <img src={item.image} className="w-full h-full object-contain transition-all duration-500" alt={item.name} referrerPolicy="no-referrer" />
                                     </div>
                                   )}
@@ -1484,8 +1534,8 @@ export default function Home() {
               <p className="text-sm font-bold uppercase tracking-[0.3em] text-white/30">Kontakt</p>
               <div className="flex flex-col gap-8">
                 <a href={contactInfo.email ? `mailto:${contactInfo.email}` : '#'} className="flex items-center gap-6 group">
-                  <div className="w-14 h-14 rounded-full bg-white/5 flex items-center justify-center text-white/40 group-hover:bg-brand-teal group-hover:text-black transition-all">
-                    <Mail size={24} />
+                  <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center text-white/40 group-hover:bg-brand-teal group-hover:text-black transition-all shadow-lg">
+                    <Mail size={28} />
                   </div>
                   <div className="flex flex-col">
                     <span className="text-xs font-bold uppercase tracking-widest text-white/30 mb-1">Napište nám</span>
@@ -1495,8 +1545,8 @@ export default function Home() {
                   </div>
                 </a>
                 <a href={contactInfo.phone ? `tel:${contactInfo.phone.replace(/\s/g, '')}` : '#'} className="flex items-center gap-6 group">
-                  <div className="w-14 h-14 rounded-full bg-white/5 flex items-center justify-center text-white/40 group-hover:bg-brand-teal group-hover:text-black transition-all">
-                    <Phone size={24} />
+                  <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center text-white/40 group-hover:bg-brand-teal group-hover:text-black transition-all shadow-lg">
+                    <Phone size={28} />
                   </div>
                   <div className="flex flex-col">
                     <span className="text-xs font-bold uppercase tracking-widest text-white/30 mb-1">Zavolejte nám</span>

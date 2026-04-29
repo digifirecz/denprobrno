@@ -35,6 +35,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           link.href = data.faviconUrl;
         }
       }
+    }, (error) => {
+      console.warn("Global settings snapshot failed (expected if not logged in):", error.message);
     });
 
     return () => {

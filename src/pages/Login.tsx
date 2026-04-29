@@ -34,12 +34,21 @@ export default function Login() {
       navigate('/admin');
     } catch (err: any) {
       console.error(err);
-      if (err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found' || err.code === 'auth/invalid-email') {
-        setError('Nesprávný e-mail nebo heslo.');
-      } else if (err.code === 'auth/too-many-requests') {
-        setError('Příliš mnoho neúspěšných pokusů. Zkuste to prosím později.');
+      const errorCode = err?.code || '';
+      const errorMessage = err?.message || '';
+      
+      if (errorCode === 'auth/invalid-credential' || 
+          errorCode === 'auth/wrong-password' || 
+          errorCode === 'auth/user-not-found' || 
+          errorCode === 'auth/invalid-email' ||
+          errorMessage.includes('auth/invalid-credential')) {
+        setError('Nesprávný e-mail nebo heslo. Zkontrolujte prosím své údaje.');
+      } else if (errorCode === 'auth/too-many-requests') {
+        setError('Příliš mnoho neúspěšných pokusů. Účet je dočasně zablokován. Zkuste to prosím později nebo si nechte poslat odkaz na obnovu hesla.');
+      } else if (errorCode === 'auth/network-request-failed') {
+        setError('Chyba sítě. Zkontrolujte prosím své připojení.');
       } else {
-        setError('Při přihlašování došlo k chybě. ' + (err.message || ''));
+        setError('Při přihlašování došlo k chybě. Zkuste to prosím znovu.');
       }
     } finally {
       setLoading(false);

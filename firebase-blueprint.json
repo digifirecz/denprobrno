@@ -9,7 +9,8 @@
         "tag": { "type": "string" },
         "color": { "type": "string" },
         "desc": { "type": "string" },
-        "video": { "type": "string" }
+        "video": { "type": "string" },
+        "imageUrl": { "type": "string" }
       },
       "required": ["name", "tag", "color", "desc"]
     },

@@ -93,9 +93,12 @@ interface FirestoreErrorInfo {
 
 function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
   const errorMessage = error instanceof Error ? error.message : String(error);
+  // Robust check for invalid credential error which usually means session expired or token invalid
   const isAuthError = errorMessage.includes('auth/invalid-credential') || 
                       errorMessage.includes('permission-denied') || 
-                      errorMessage.includes('Insufficient permissions');
+                      errorMessage.includes('Insufficient permissions') ||
+                      errorMessage.includes('auth/user-token-expired') ||
+                      errorMessage.includes('auth/id-token-expired');
 
   const errInfo: FirestoreErrorInfo = {
     error: errorMessage,
@@ -113,22 +116,27 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
     operationType,
     path
   }
-  console.error('Firestore Error: ', JSON.stringify(errInfo));
   
   if (isAuthError) {
-    toast.error("Vaše relace vypršela nebo nemáte dostatečná oprávnění. Přesměrovávám na přihlášení...");
-    
-    // Sign out to prevent redirect loop in Login.tsx
-    signOut(auth).finally(() => {
-      setTimeout(() => {
-        window.location.href = '/login';
-      }, 2000);
-    });
+    console.warn('Authentication/Permission Error: ', errorMessage);
+    // Only show toast and redirect if we haven't already started the process
+    if (!window.location.pathname.includes('/login')) {
+      toast.error("Vaše relace vypršela nebo nemáte dostatečná oprávnění. Přihlaste se prosím znovu.");
+      
+      // Sign out to clean up state and redirect
+      signOut(auth).finally(() => {
+        setTimeout(() => {
+          window.location.href = '/login';
+        }, 1500);
+      });
+    }
   } else {
+    console.error('Firestore Error: ', JSON.stringify(errInfo));
     toast.error(`Chyba databáze: ${errorMessage}`);
   }
   
-  throw new Error(JSON.stringify(errInfo));
+  // We throw to stop the calling operation, but we wrap it to avoid showing raw JSON to user if caught by high-level handlers
+  throw new Error(`DATABASE_ERROR: ${errorMessage}`);
 }
 
 const getErrorMessage = (err: any, fallback: string) => {
@@ -145,6 +153,7 @@ interface Artist {
   desc: string;
   video: string;
   icon?: string;
+  imageUrl?: string;
 }
 
 interface PracticalInfo {
@@ -197,6 +206,8 @@ interface FamilyProgram {
 interface CommunityItem {
   name: string;
   description: string;
+  image?: string;
+  link?: string;
 }
 
 interface CommunitySection {
@@ -1269,6 +1280,7 @@ const ProgramManager = () => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [artistToDelete, setArtistToDelete] = useState<Artist | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
 
   const [headerData, setHeaderData] = useState({ subtitle: 'Hudba a koncerty' });
   const [isHeaderModalOpen, setIsHeaderModalOpen] = useState(false);
@@ -1280,7 +1292,8 @@ const ProgramManager = () => {
     tag: '',
     desc: '',
     video: '',
-    icon: 'Music'
+    icon: 'Music',
+    imageUrl: ''
   });
 
   useEffect(() => {
@@ -1333,11 +1346,12 @@ const ProgramManager = () => {
         tag: artist.tag,
         desc: artist.desc,
         video: artist.video || '',
-        icon: artist.icon || 'Music'
+        icon: artist.icon || 'Music',
+        imageUrl: artist.imageUrl || ''
       });
     } else {
       setEditingArtist(null);
-      setFormData({ name: '', tag: '', desc: '', video: '', icon: 'Music' });
+      setFormData({ name: '', tag: '', desc: '', video: '', icon: 'Music', imageUrl: '' });
     }
     setIsModalOpen(true);
   };
@@ -1359,6 +1373,7 @@ const ProgramManager = () => {
         desc: formData.desc,
         video: extractYoutubeId(formData.video),
         icon: formData.icon,
+        imageUrl: formData.imageUrl,
         updatedAt: serverTimestamp()
       };
 
@@ -1400,6 +1415,31 @@ const ProgramManager = () => {
       toast.error(`Chyba při mazání: ${err.message || 'Neznámá chyba'}`);
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  const handleArtistImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+
+    try {
+      const fileName = `music/${Date.now()}_${file.name}`;
+      const storageRef = ref(storage, fileName);
+      
+      const snapshot = await uploadBytes(storageRef, file);
+      const url = await getDownloadURL(snapshot.ref);
+      
+      if (url) {
+        setFormData(prev => ({ ...prev, imageUrl: url }));
+        toast.success('Fotka nahrána');
+      }
+    } catch (err: any) {
+      console.error('Upload failed:', err);
+      toast.error(`Chyba při nahrávání: ${err.message}`);
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -1461,59 +1501,66 @@ const ProgramManager = () => {
                           <motion.div 
                             key={artist.id} 
                             onClick={() => setExpandedArtist(isExpanded ? null : artist.id)}
-                            className={`bg-brand-red text-white border border-brand-red/10 rounded-2xl p-6 flex flex-col text-left group transition-all hover:bg-brand-red-dark cursor-pointer ${isExpanded ? 'ring-2 ring-brand-teal/50' : ''}`}
+                            className={`bg-brand-red text-white border border-brand-red/10 rounded-2xl flex flex-col text-left group transition-all hover:bg-brand-red-dark cursor-pointer overflow-hidden ${isExpanded ? 'ring-2 ring-brand-teal/50' : ''}`}
                           >
-                            <div className="flex items-center justify-between gap-3 mb-4">
-                              <div className="flex items-center gap-3">
-                                <div className={`transition-opacity ${isExpanded ? 'opacity-100 text-brand-teal' : 'opacity-30 group-hover:opacity-100'}`}>
-                                  {(() => {
-                                     const IconData = COMMUNITY_ICONS.find(i => i.id === artist.icon);
-                                     const Icon = IconData ? IconData.icon : Music;
-                                     return <Icon size={20} />;
-                                  })()}
-                                </div>
-                                <div className="text-xl font-bold tracking-tight font-sans uppercase truncate transition-colors group-hover:text-brand-teal">
-                                  {artist.name}
-                                </div>
+                            {artist.imageUrl && (
+                              <div className="w-full h-40 overflow-hidden bg-white/5 border-b border-white/10">
+                                <img src={artist.imageUrl} alt={artist.name} className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-700" referrerPolicy="no-referrer" />
                               </div>
-                              {isExpanded ? <ChevronUp size={20} className="text-brand-teal" /> : <ChevronDown size={20} className="opacity-50" />}
-                            </div>
-                            
-                            <AnimatePresence>
-                              {isExpanded && (
-                                <motion.div
-                                  initial={{ height: 0, opacity: 0 }}
-                                  animate={{ height: "auto", opacity: 1 }}
-                                  exit={{ height: 0, opacity: 0 }}
-                                  transition={{ duration: 0.3, ease: "easeInOut" }}
-                                  className="overflow-hidden"
-                                >
-                                  <p className="text-sm opacity-90 leading-relaxed mb-6 font-light">{artist.desc}</p>
-                                  {artist.video && (
-                                    <div className="mb-6 rounded-xl overflow-hidden aspect-video bg-black/20 border border-white/10 shadow-inner">
-                                      <iframe
-                                        width="100%"
-                                        height="100%"
-                                        src={`https://www.youtube.com/embed/${((v) => {
-                                          if (!v) return "";
-                                          const match = v.match(/(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
-                                          return match ? match[1] : v;
-                                        })(artist.video)}?rel=0`}
-                                        title={`${artist.name} video`}
-                                        frameBorder="0"
-                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                        allowFullScreen
-                                      ></iframe>
-                                    </div>
-                                  )}
-                                </motion.div>
-                              )}
-                            </AnimatePresence>
+                            )}
+                            <div className="p-6 flex-1 flex flex-col">
+                              <div className="flex items-center justify-between gap-3 mb-4">
+                                <div className="flex items-center gap-3">
+                                  <div className={`transition-opacity ${isExpanded ? 'opacity-100 text-brand-teal' : 'opacity-30 group-hover:opacity-100'}`}>
+                                    {(() => {
+                                       const IconData = COMMUNITY_ICONS.find(i => i.id === artist.icon);
+                                       const Icon = IconData ? IconData.icon : Music;
+                                       return <Icon size={20} />;
+                                    })()}
+                                  </div>
+                                  <div className="text-xl font-bold tracking-tight font-sans uppercase truncate transition-colors group-hover:text-brand-teal">
+                                    {artist.name}
+                                  </div>
+                                </div>
+                                {isExpanded ? <ChevronUp size={20} className="text-brand-teal" /> : <ChevronDown size={20} className="opacity-50" />}
+                              </div>
+                              
+                              <AnimatePresence>
+                                {isExpanded && (
+                                  <motion.div
+                                    initial={{ height: 0, opacity: 0 }}
+                                    animate={{ height: "auto", opacity: 1 }}
+                                    exit={{ height: 0, opacity: 0 }}
+                                    transition={{ duration: 0.3, ease: "easeInOut" }}
+                                    className="overflow-hidden"
+                                  >
+                                    <p className="text-sm opacity-90 leading-relaxed mb-6 font-light">{artist.desc}</p>
+                                    {artist.video && (
+                                      <div className="mb-6 rounded-xl overflow-hidden aspect-video bg-black/20 border border-white/10 shadow-inner">
+                                        <iframe
+                                          width="100%"
+                                          height="100%"
+                                          src={`https://www.youtube.com/embed/${((v) => {
+                                            if (!v) return "";
+                                            const match = v.match(/(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+                                            return match ? match[1] : v;
+                                          })(artist.video)}?rel=0`}
+                                          title={`${artist.name} video`}
+                                          frameBorder="0"
+                                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                          allowFullScreen
+                                        ></iframe>
+                                      </div>
+                                    )}
+                                  </motion.div>
+                                )}
+                              </AnimatePresence>
 
-                            <div className="mt-auto">
-                              <span className="inline-block border border-white/30 px-2 py-0.5 rounded text-xs font-bold uppercase tracking-widest text-white shadow-xs">
-                                {artist.tag}
-                              </span>
+                              <div className="mt-auto">
+                                <span className="inline-block border border-white/30 px-2 py-0.5 rounded text-xs font-bold uppercase tracking-widest text-white shadow-xs">
+                                  {artist.tag}
+                                </span>
+                              </div>
                             </div>
                           </motion.div>
                         );
@@ -1526,59 +1573,66 @@ const ProgramManager = () => {
                           <motion.div 
                             key={artist.id} 
                             onClick={() => setExpandedArtist(isExpanded ? null : artist.id)}
-                            className={`bg-brand-red text-white border border-brand-red/10 rounded-2xl p-6 flex flex-col text-left group transition-all hover:bg-brand-red-dark cursor-pointer ${isExpanded ? 'ring-2 ring-brand-teal/50' : ''}`}
+                            className={`bg-brand-red text-white border border-brand-red/10 rounded-2xl flex flex-col text-left group transition-all hover:bg-brand-red-dark cursor-pointer overflow-hidden ${isExpanded ? 'ring-2 ring-brand-teal/50' : ''}`}
                           >
-                            <div className="flex items-center justify-between gap-3 mb-4">
-                              <div className="flex items-center gap-3">
-                                <div className={`transition-opacity ${isExpanded ? 'opacity-100 text-brand-teal' : 'opacity-30 group-hover:opacity-100'}`}>
-                                  {(() => {
-                                     const IconData = COMMUNITY_ICONS.find(i => i.id === artist.icon);
-                                     const Icon = IconData ? IconData.icon : Music;
-                                     return <Icon size={20} />;
-                                  })()}
-                                </div>
-                                <div className="text-xl font-bold tracking-tight font-sans uppercase truncate transition-colors group-hover:text-brand-teal">
-                                  {artist.name}
-                                </div>
+                            {artist.imageUrl && (
+                              <div className="w-full h-40 overflow-hidden bg-white/5 border-b border-white/10">
+                                <img src={artist.imageUrl} alt={artist.name} className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-700" referrerPolicy="no-referrer" />
                               </div>
-                              {isExpanded ? <ChevronUp size={20} className="text-brand-teal" /> : <ChevronDown size={20} className="opacity-50" />}
-                            </div>
-                            
-                            <AnimatePresence>
-                              {isExpanded && (
-                                <motion.div
-                                  initial={{ height: 0, opacity: 0 }}
-                                  animate={{ height: "auto", opacity: 1 }}
-                                  exit={{ height: 0, opacity: 0 }}
-                                  transition={{ duration: 0.3, ease: "easeInOut" }}
-                                  className="overflow-hidden"
-                                >
-                                  <p className="text-sm opacity-90 leading-relaxed mb-6 font-light">{artist.desc}</p>
-                                  {artist.video && (
-                                    <div className="mb-6 rounded-xl overflow-hidden aspect-video bg-black/20 border border-white/10 shadow-inner">
-                                      <iframe
-                                        width="100%"
-                                        height="100%"
-                                        src={`https://www.youtube.com/embed/${((v) => {
-                                          if (!v) return "";
-                                          const match = v.match(/(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
-                                          return match ? match[1] : v;
-                                        })(artist.video)}?rel=0`}
-                                        title={`${artist.name} video`}
-                                        frameBorder="0"
-                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                        allowFullScreen
-                                      ></iframe>
-                                    </div>
-                                  )}
-                                </motion.div>
-                              )}
-                            </AnimatePresence>
+                            )}
+                            <div className="p-6 flex-1 flex flex-col">
+                              <div className="flex items-center justify-between gap-3 mb-4">
+                                <div className="flex items-center gap-3">
+                                  <div className={`transition-opacity ${isExpanded ? 'opacity-100 text-brand-teal' : 'opacity-30 group-hover:opacity-100'}`}>
+                                    {(() => {
+                                       const IconData = COMMUNITY_ICONS.find(i => i.id === artist.icon);
+                                       const Icon = IconData ? IconData.icon : Music;
+                                       return <Icon size={20} />;
+                                    })()}
+                                  </div>
+                                  <div className="text-xl font-bold tracking-tight font-sans uppercase truncate transition-colors group-hover:text-brand-teal">
+                                    {artist.name}
+                                  </div>
+                                </div>
+                                {isExpanded ? <ChevronUp size={20} className="text-brand-teal" /> : <ChevronDown size={20} className="opacity-50" />}
+                              </div>
+                              
+                              <AnimatePresence>
+                                {isExpanded && (
+                                  <motion.div
+                                    initial={{ height: 0, opacity: 0 }}
+                                    animate={{ height: "auto", opacity: 1 }}
+                                    exit={{ height: 0, opacity: 0 }}
+                                    transition={{ duration: 0.3, ease: "easeInOut" }}
+                                    className="overflow-hidden"
+                                  >
+                                    <p className="text-sm opacity-90 leading-relaxed mb-6 font-light">{artist.desc}</p>
+                                    {artist.video && (
+                                      <div className="mb-6 rounded-xl overflow-hidden aspect-video bg-black/20 border border-white/10 shadow-inner">
+                                        <iframe
+                                          width="100%"
+                                          height="100%"
+                                          src={`https://www.youtube.com/embed/${((v) => {
+                                            if (!v) return "";
+                                            const match = v.match(/(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+                                            return match ? match[1] : v;
+                                          })(artist.video)}?rel=0`}
+                                          title={`${artist.name} video`}
+                                          frameBorder="0"
+                                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                          allowFullScreen
+                                        ></iframe>
+                                      </div>
+                                    )}
+                                  </motion.div>
+                                )}
+                              </AnimatePresence>
 
-                            <div className="mt-auto">
-                              <span className="inline-block border border-white/30 px-2 py-0.5 rounded text-xs font-bold uppercase tracking-widest text-white shadow-xs">
-                                {artist.tag}
-                              </span>
+                              <div className="mt-auto">
+                                <span className="inline-block border border-white/30 px-2 py-0.5 rounded text-xs font-bold uppercase tracking-widest text-white shadow-xs">
+                                  {artist.tag}
+                                </span>
+                              </div>
                             </div>
                           </motion.div>
                         );
@@ -1643,6 +1697,46 @@ const ProgramManager = () => {
                   <div className="md:col-span-2 space-y-2 text-left">
                     <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">YouTube Video URL</label>
                     <input value={formData.video} onChange={e => setFormData({...formData, video: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all" />
+                  </div>
+                  <div className="md:col-span-2 space-y-2 text-left">
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Fotka kapely</label>
+                    <div className="relative group/upload">
+                      <div className={`w-full h-48 rounded-2xl overflow-hidden bg-slate-50 border-2 border-dashed transition-all relative flex items-center justify-center ${formData.imageUrl ? 'border-slate-200' : 'border-slate-200 hover:border-brand-teal hover:bg-slate-100'}`}>
+                        {formData.imageUrl ? (
+                          <img src={formData.imageUrl} className="w-full h-full object-contain" alt="Preview" referrerPolicy="no-referrer" />
+                        ) : (
+                          <div className="flex flex-col items-center gap-2 text-slate-300 group-hover/upload:text-brand-teal transition-colors">
+                            <ImageIcon size={32} />
+                            <span className="text-[10px] font-bold uppercase tracking-widest">Klikněte pro nahrání fotky</span>
+                          </div>
+                        )}
+                        
+                        {isUploading && (
+                          <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] flex items-center justify-center z-20">
+                            <Loader2 className="animate-spin text-brand-teal" size={32} />
+                          </div>
+                        )}
+
+                        <input 
+                          type="file" 
+                          accept="image/*" 
+                          onChange={handleArtistImageUpload}
+                          className="absolute inset-0 opacity-0 cursor-pointer z-10"
+                          disabled={isUploading}
+                        />
+                      </div>
+
+                      {formData.imageUrl && !isUploading && (
+                        <button 
+                          type="button" 
+                          onClick={() => setFormData({...formData, imageUrl: ''})}
+                          className="mt-2 text-[10px] font-bold text-brand-red uppercase tracking-widest hover:underline flex items-center gap-1.5 ml-1"
+                        >
+                          <Trash2 size={12} />
+                          Smazat
+                        </button>
+                      )}
+                    </div>
                   </div>
                   <div className="md:col-span-2 space-y-2 text-left">
                     <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Popis / Příběh <span className="text-brand-red">*</span></label>
@@ -2335,17 +2429,17 @@ const TalkshowManager = () => {
                                 {(item.guestsTitle || item.guests?.some(g => g.name || g.role)) && (
                                   <div className="flex-1 space-y-6 w-full">
                                     {item.guestsTitle && <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/40">{item.guestsTitle}</p>}
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-y-8 gap-x-12">
+                                    <div className="flex flex-wrap gap-y-8 gap-x-12">
                                       {item.guests?.map((guest, gi) => (
                                         (guest.name || guest.role) && (
-                                          <div key={gi} className="group">
+                                          <div key={gi} className="group shrink-0 max-w-[200px] flex flex-col items-center text-center">
                                             {guest.imageUrl && (
-                                              <div className="w-14 h-14 rounded-full overflow-hidden mb-4 bg-white/10 border border-white/10 shrink-0">
-                                                <img src={guest.imageUrl} alt={guest.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                                              <div className="w-28 h-28 rounded-full overflow-hidden mb-4 bg-white/10 border-2 border-white/20 shrink-0 shadow-lg">
+                                                <img src={guest.imageUrl} alt={guest.name || 'host'} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                                               </div>
                                             )}
-                                            {guest.name && <p className="text-xl font-bold tracking-tight text-white">{guest.name}</p>}
-                                            {guest.role && <p className="text-sm text-white/50 font-medium">{guest.role}</p>}
+                                            {guest.name && <p className="text-xl font-bold tracking-tight text-white leading-tight">{guest.name}</p>}
+                                            {guest.role && <p className="text-sm text-white/50 font-medium mt-1 leading-snug">{guest.role}</p>}
                                           </div>
                                         )
                                       ))}
@@ -2356,11 +2450,11 @@ const TalkshowManager = () => {
                                 {/* Moderátor Box */}
                                 {(item.moderatorName || item.moderatorRole) && (
                                   <div className="w-full md:w-auto shrink-0">
-                                    <div className="bg-white/10 rounded-3xl p-6 pr-16 border border-white/10 relative min-w-[280px]">
+                                    <div className="bg-white/10 rounded-3xl p-6 pr-36 border border-white/10 relative min-w-[320px]">
                                       <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/40 mb-3">Moderuje</p>
                                       {item.moderatorName && <p className="text-xl font-bold tracking-tight text-white mb-0.5">{item.moderatorName}</p>}
                                       {item.moderatorRole && <p className="text-sm text-white/50 font-medium">{item.moderatorRole}</p>}
-                                      <div className="absolute right-6 top-1/2 -translate-y-1/2 w-14 h-14 rounded-full overflow-hidden border border-white/10 shrink-0 bg-white/5">
+                                      <div className="absolute right-6 top-1/2 -translate-y-1/2 w-28 h-28 rounded-full overflow-hidden border-2 border-white/20 shrink-0 bg-white/5 shadow-lg">
                                         {item.moderatorImage ? (
                                           <img src={item.moderatorImage} alt={item.moderatorName} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                                         ) : (
@@ -2378,11 +2472,11 @@ const TalkshowManager = () => {
                             {/* Závěrečné slovo */}
                             {item.closingWordName && (
                               <div className="flex items-start gap-4 text-white pt-2">
-                                <div className="w-14 h-14 rounded-full bg-white/20 overflow-hidden flex items-center justify-center text-white text-xs font-black tracking-widest shrink-0 shadow-lg mt-1 border border-white/10">
+                                <div className="w-28 h-28 rounded-full bg-white/20 overflow-hidden flex items-center justify-center text-white text-xs font-black tracking-widest shrink-0 shadow-xl border-2 border-white/20">
                                   {item.closingWordImage ? (
                                     <img src={item.closingWordImage} alt={item.closingWordName} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                                   ) : (
-                                    item.closingWordName.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2)
+                                    <span className="text-xl">{item.closingWordName.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2)}</span>
                                   )}
                                 </div>
                                 <div className="text-left">
@@ -2465,7 +2559,7 @@ const TalkshowManager = () => {
                     </h4>
                     <div className="flex gap-4 items-start">
                       <div className="shrink-0 space-y-2">
-                        <div className="w-14 h-14 rounded-full bg-slate-50 border border-slate-200 overflow-hidden relative group/img">
+                        <div className="w-20 h-20 rounded-full bg-slate-50 border border-slate-200 overflow-hidden relative group/img">
                           {formData.moderatorImage ? (
                             <img src={formData.moderatorImage} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                           ) : (
@@ -2502,7 +2596,7 @@ const TalkshowManager = () => {
                     </h4>
                     <div className="flex gap-4 items-start">
                       <div className="shrink-0 space-y-2">
-                        <div className="w-14 h-14 rounded-full bg-slate-50 border border-slate-200 overflow-hidden relative group/img">
+                        <div className="w-20 h-20 rounded-full bg-slate-50 border border-slate-200 overflow-hidden relative group/img">
                           {formData.closingWordImage ? (
                             <img src={formData.closingWordImage} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                           ) : (
@@ -2551,7 +2645,7 @@ const TalkshowManager = () => {
                       {formData.guests.map((guest, index) => (
                         <div key={index} className="flex gap-3 items-start p-4 bg-slate-50 rounded-2xl border border-slate-100">
                           <div className="shrink-0 space-y-2">
-                             <div className="w-14 h-14 rounded-full bg-white border border-slate-200 overflow-hidden relative group/img">
+                             <div className="w-20 h-20 rounded-full bg-white border border-slate-200 overflow-hidden relative group/img">
                                {guest.imageUrl ? (
                                  <img src={guest.imageUrl} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                                ) : (
@@ -2565,7 +2659,7 @@ const TalkshowManager = () => {
                                </label>
                              </div>
                              {guest.imageUrl && (
-                               <button type="button" onClick={() => handleGuestChange(index, 'imageUrl', '')} className="text-[10px] font-bold text-brand-red uppercase tracking-widest block w-full text-center hover:underline">Smazat foto</button>
+                               <button type="button" onClick={() => handleGuestChange(index, 'imageUrl', '')} className="text-[10px] font-bold text-brand-red uppercase tracking-widest block w-full text-center hover:underline">Smazat</button>
                              )}
                           </div>
                           <div className="flex-1 space-y-2">
@@ -3265,6 +3359,25 @@ const CommunityManager: React.FC = () => {
     });
   };
 
+  const handleItemImageUpload = async (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const toastId = toast.loading('Nahrávám obrázek...');
+    try {
+      const fileName = `community/items/${Date.now()}-${file.name}`;
+      const storageRef = ref(storage, fileName);
+      const snapshot = await uploadBytes(storageRef, file);
+      const url = await getDownloadURL(snapshot.ref);
+      
+      handleItemChange(index, 'image', url);
+      toast.success('Obrázek nahrán', { id: toastId });
+    } catch (err: any) {
+      console.error('Item image upload failed:', err);
+      toast.error(`Chyba: ${err.message}`, { id: toastId });
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -3275,7 +3388,12 @@ const CommunityManager: React.FC = () => {
         name: formData.name,
         description: formData.description,
         tag: isSmallSection ? formData.tag : '',
-        items: isSmallSection ? [] : formData.items.map(item => ({ name: item.name, description: item.description })),
+        items: isSmallSection ? [] : formData.items.map(item => ({ 
+          name: item.name, 
+          description: item.description,
+          image: item.image || '',
+          link: item.link || '' 
+        })),
         order: Number(formData.order),
         icon: formData.icon,
         updatedAt: serverTimestamp()
@@ -3396,14 +3514,47 @@ const CommunityManager: React.FC = () => {
                               </div>
                               
                               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                {(section.items || []).map((item, i) => (
-                                  <div key={i} className="p-4 bg-black/10 rounded-2xl border border-white/5 hover:bg-black/20 transition-all group/item">
-                                    <span className="font-bold text-lg text-white tracking-tight block mb-0.5">{item.name}</span>
-                                    <p className="text-[10px] font-black text-brand-yellow uppercase tracking-widest opacity-60 group-hover/item:opacity-100 transition-opacity">
-                                      {item.description}
-                                    </p>
-                                  </div>
-                                ))}
+                                {(section.items || []).map((item, i) => {
+                                  const itemPreview = (
+                                    <>
+                                      {item.image && (
+                                        <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white bg-white shrink-0 p-1.5 flex items-center justify-center">
+                                          <img src={item.image} className="w-full h-full object-contain" alt={item.name} referrerPolicy="no-referrer" />
+                                        </div>
+                                      )}
+                                      <div className="text-left">
+                                        <div className="flex items-center gap-2">
+                                          <span className="font-bold text-lg text-white tracking-tight">{item.name}</span>
+                                          {item.link && <ExternalLink size={12} className="text-brand-teal" />}
+                                        </div>
+                                        <p className="text-[10px] font-black text-brand-yellow uppercase tracking-widest opacity-60 group-hover/item:opacity-100 transition-opacity">
+                                          {item.description}
+                                        </p>
+                                      </div>
+                                    </>
+                                  );
+
+                                  if (item.link) {
+                                    const validLink = item.link.startsWith('http') ? item.link : `https://${item.link}`;
+                                    return (
+                                      <a 
+                                        key={i} 
+                                        href={validLink} 
+                                        target="_blank" 
+                                        rel="noopener noreferrer" 
+                                        className="p-4 bg-black/10 rounded-2xl border border-white/5 hover:bg-white/10 hover:border-white/20 transition-all group/item flex items-center gap-4 cursor-pointer"
+                                      >
+                                        {itemPreview}
+                                      </a>
+                                    );
+                                  }
+
+                                  return (
+                                    <div key={i} className="p-4 bg-black/10 rounded-2xl border border-white/5 hover:bg-black/20 transition-all group/item flex items-center gap-4">
+                                      {itemPreview}
+                                    </div>
+                                  );
+                                })}
                               </div>
                             </div>
                           );
@@ -3568,14 +3719,39 @@ const CommunityManager: React.FC = () => {
                         {formData.items.map((item, index) => (
                           <div key={index} className="p-4 bg-slate-50 rounded-2xl border border-slate-100 relative group">
                             <button type="button" onClick={() => handleRemoveItem(index)} className="absolute top-4 right-4 p-2 text-slate-400 hover:text-brand-red transition-colors"><Trash2 size={16} /></button>
-                            <div className="grid gap-3 mt-2 md:mt-0 md:pr-8">
-                              <div className="space-y-1 text-left">
-                                <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Název <span className="text-brand-red">*</span></label>
-                                <input required value={item.name} onChange={e => handleItemChange(index, 'name', e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2 text-sm text-slate-900 outline-none focus:border-brand-teal" />
+                            <div className="flex gap-4 items-start">
+                              <div className="shrink-0 space-y-2">
+                                <div className="w-16 h-16 rounded-2xl bg-white border border-slate-200 overflow-hidden relative group/img">
+                                  {item.image ? (
+                                    <img src={item.image} className="w-full h-full object-contain p-1" referrerPolicy="no-referrer" />
+                                  ) : (
+                                    <div className="w-full h-full flex items-center justify-center text-slate-200">
+                                      <Plus size={20} />
+                                    </div>
+                                  )}
+                                  <label className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center cursor-pointer">
+                                    <input type="file" className="hidden" onChange={e => handleItemImageUpload(index, e)} accept="image/*" />
+                                    <Plus className="text-white" size={20} />
+                                  </label>
+                                </div>
+                                {item.image && (
+                                  <button type="button" onClick={() => handleItemChange(index, 'image', '')} className="text-[10px] font-bold text-brand-red uppercase tracking-widest block w-full text-center hover:underline">Smazat</button>
+                                )}
                               </div>
-                              <div className="space-y-1 text-left">
-                                <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Popis</label>
-                                <input value={item.description} onChange={e => handleItemChange(index, 'description', e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2 text-xs text-slate-500 outline-none focus:border-brand-teal" />
+
+                              <div className="grid gap-3 flex-grow md:pr-8">
+                                <div className="space-y-1 text-left">
+                                  <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Název <span className="text-brand-red">*</span></label>
+                                  <input required value={item.name} onChange={e => handleItemChange(index, 'name', e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2 text-sm text-slate-900 outline-none focus:border-brand-teal" />
+                                </div>
+                                <div className="space-y-1 text-left">
+                                  <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Popis</label>
+                                  <input value={item.description} onChange={e => handleItemChange(index, 'description', e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2 text-[10px] text-slate-500 outline-none focus:border-brand-teal" />
+                                </div>
+                                <div className="space-y-1 text-left">
+                                  <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Webový odkaz</label>
+                                  <input value={item.link || ''} onChange={e => handleItemChange(index, 'link', e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2 text-[10px] text-slate-400 outline-none focus:border-brand-teal" placeholder="www.priklad.cz" />
+                                </div>
                               </div>
                             </div>
                           </div>
@@ -3933,7 +4109,7 @@ const AboutManager = () => {
                                     className="group/item flex gap-6 text-left items-start"
                                   >
                                     {item.image && (
-                                      <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white bg-white group-hover/item:border-brand-teal transition-colors shrink-0 p-1.5 flex items-center justify-center">
+                                      <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-white bg-white group-hover/item:border-brand-teal transition-colors shrink-0 p-2 flex items-center justify-center shadow-md">
                                         <img src={item.image} className="w-full h-full object-contain transition-all duration-500" alt={item.name} referrerPolicy="no-referrer" />
                                       </div>
                                     )}
@@ -3948,7 +4124,7 @@ const AboutManager = () => {
                                 ) : (
                                   <div className="flex gap-6 text-left items-start">
                                     {item.image && (
-                                      <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white bg-white shrink-0 p-1.5 flex items-center justify-center">
+                                      <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-white bg-white shrink-0 p-2 flex items-center justify-center shadow-md">
                                         <img src={item.image} className="w-full h-full object-contain transition-all duration-500" alt={item.name} referrerPolicy="no-referrer" />
                                       </div>
                                     )}
@@ -3980,7 +4156,9 @@ const AboutManager = () => {
                   </div>
                   <div className="min-w-0">
                     <h4 className="text-sm font-black text-slate-900 truncate tracking-tighter">{s.title}</h4>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">{s.tag}</p>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">
+                      {s.size === 'large' ? 'Velká sekce' : 'Malá sekce'}
+                    </p>
                   </div>
                 </div>
                 <div className="flex gap-1 ml-4">
@@ -4081,7 +4259,7 @@ const AboutManager = () => {
 
                       <div className="space-y-4">
                         {formData.items.map((item, idx) => (
-                          <div key={idx} className="p-6 bg-slate-50 rounded-2xl space-y-4 relative group">
+                          <div key={idx} className="p-4 bg-slate-50 rounded-2xl border border-slate-100 relative group">
                             <button 
                               type="button"
                               onClick={() => {
@@ -4089,41 +4267,42 @@ const AboutManager = () => {
                                 newItems.splice(idx, 1);
                                 setFormData({...formData, items: newItems});
                               }}
-                              className="absolute top-4 right-4 w-8 h-8 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-400 hover:text-brand-red transition-all"
+                              className="absolute top-4 right-4 p-2 text-slate-400 hover:text-brand-red transition-colors"
                             >
-                              <Trash2 size={14} />
+                              <Trash2 size={16} />
                             </button>
-                            <div className="flex gap-6 items-start">
+                            <div className="flex gap-4 items-start">
                               <div className="shrink-0 space-y-2">
-                                <div className="w-24 h-24 rounded-2xl bg-white border border-slate-200 overflow-hidden relative group/img">
+                                <div className="w-16 h-16 rounded-2xl bg-white border border-slate-200 overflow-hidden relative group/img">
                                   {item.image ? (
-                                    <img src={item.image} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                                    <img src={item.image} className="w-full h-full object-contain p-1" referrerPolicy="no-referrer" />
                                   ) : (
-                                    <div className="w-full h-full flex items-center justify-center text-slate-300">
-                                      <ImageIcon size={24} />
+                                    <div className="w-full h-full flex items-center justify-center text-slate-200">
+                                      <Plus size={20} />
                                     </div>
                                   )}
                                   <label className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center cursor-pointer">
-                                    <Upload size={20} className="text-white" />
-                                    <input type="file" accept="image/*" className="hidden" onChange={e => handleItemImageUpload(idx, e)} />
+                                    <input type="file" className="hidden" onChange={e => handleItemImageUpload(idx, e)} accept="image/*" />
+                                    <Plus className="text-white" size={20} />
                                   </label>
                                 </div>
                                 {item.image && (
-                                  <button type="button" onClick={() => handleItemChange(idx, 'image', '')} className="text-[10px] font-bold text-brand-red uppercase tracking-widest block w-full text-center hover:underline">Smazat foto</button>
+                                  <button type="button" onClick={() => handleItemChange(idx, 'image', '')} className="text-[10px] font-bold text-brand-red uppercase tracking-widest block w-full text-center hover:underline">Smazat</button>
                                 )}
                               </div>
-                              <div className="flex-1 space-y-4">
-                                <div className="space-y-1">
-                                  <label className="text-[8px] font-bold uppercase tracking-widest text-slate-400 ml-1">Název položky</label>
-                                  <input value={item.name} onChange={e => handleItemChange(idx, 'name', e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2 text-sm text-slate-900 focus:border-brand-teal outline-none transition-all" />
+
+                              <div className="grid gap-3 flex-grow md:pr-8">
+                                <div className="space-y-1 text-left">
+                                  <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Název <span className="text-brand-red">*</span></label>
+                                  <input required value={item.name} onChange={e => handleItemChange(idx, 'name', e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2 text-sm text-slate-900 outline-none focus:border-brand-teal" />
                                 </div>
-                                <div className="space-y-1">
-                                  <label className="text-[8px] font-bold uppercase tracking-widest text-slate-400 ml-1">Popis</label>
-                                  <textarea rows={3} value={item.description} onChange={e => handleItemChange(idx, 'description', e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2 text-sm text-slate-900 focus:border-brand-teal outline-none transition-all resize-none" />
+                                <div className="space-y-1 text-left">
+                                  <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Popis</label>
+                                  <input value={item.description} onChange={e => handleItemChange(idx, 'description', e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2 text-[10px] text-slate-500 outline-none focus:border-brand-teal" />
                                 </div>
-                                <div className="space-y-1">
-                                  <label className="text-[8px] font-bold uppercase tracking-widest text-slate-400 ml-1">Odkaz (URL)</label>
-                                  <input value={item.link} onChange={e => handleItemChange(idx, 'link', e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2 text-sm text-slate-900 focus:border-brand-teal outline-none transition-all" />
+                                <div className="space-y-1 text-left">
+                                  <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Webový odkaz</label>
+                                  <input value={item.link || ''} onChange={e => handleItemChange(idx, 'link', e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2 text-[10px] text-slate-400 outline-none focus:border-brand-teal" placeholder="www.priklad.cz" />
                                 </div>
                               </div>
                             </div>
