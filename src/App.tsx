@@ -32,29 +32,32 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
 function AppRoutes() {
   return (
-    <Routes>
-      <Route path="/" element={<Home />} />
-      <Route path="/gdpr" element={<Privacy />} />
-      <Route path="/login" element={<Login />} />
-      <Route 
-        path="/admin/*" 
-        element={
-          <ProtectedRoute>
-            <Admin />
-          </ProtectedRoute>
-        } 
-      />
-      {/* Explicitly handle the base /admin route as well if path="/admin/*" has issues in some edge cases */}
-      <Route 
-        path="/admin" 
-        element={
-          <ProtectedRoute>
-            <Admin />
-          </ProtectedRoute>
-        } 
-      />
-      <Route path="*" element={<NotFound />} />
-    </Routes>
+    <>
+      <GoogleAnalytics />
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/gdpr" element={<Privacy />} />
+        <Route path="/login" element={<Login />} />
+        <Route 
+          path="/admin/*" 
+          element={
+            <ProtectedRoute>
+              <Admin />
+            </ProtectedRoute>
+          } 
+        />
+        {/* Explicitly handle the base /admin route as well if path="/admin/*" has issues in some edge cases */}
+        <Route 
+          path="/admin" 
+          element={
+            <ProtectedRoute>
+              <Admin />
+            </ProtectedRoute>
+          } 
+        />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </>
   );
 }
 
@@ -62,11 +65,10 @@ export default function App() {
   return (
     <AuthProvider>
       <Router>
-        <GoogleAnalytics />
         <AppRoutes />
+        <Toaster position="bottom-right" />
+        <CookieConsent />
       </Router>
-      <Toaster position="bottom-right" />
-      <CookieConsent />
     </AuthProvider>
   );
 }

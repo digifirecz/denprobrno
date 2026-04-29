@@ -32,15 +32,18 @@ export function GoogleAnalytics() {
 
               window.dataLayer = window.dataLayer || [];
               window.gtag = function() {
+                // eslint-disable-next-line prefer-rest-params
                 window.dataLayer.push(arguments);
               };
               window.gtag('js', new Date());
             }
 
             // Send page view on every location change
-            window.gtag('config', measurementId, {
-              page_path: location.pathname + location.search,
-            });
+            if (window.gtag) {
+              window.gtag('config', measurementId, {
+                page_path: location.pathname + location.search,
+              });
+            }
           }
         }
       } catch (error) {
