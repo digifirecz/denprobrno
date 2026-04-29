@@ -138,7 +138,15 @@ async function startServer() {
       gtag('config', '${gaMeasurementId}');
     </script>`;
       }
-      html = html.replace('{{GA_SCRIPT}}', gaScript);
+      
+      // Use a more robust replacement for GA_SCRIPT that handles placeholders better
+      const gaPlaceholderRegex = /{{GA_SCRIPT}}|<!--\s*GA_SCRIPT_START\s*-->[\s\S]*?<!--\s*GA_SCRIPT_END\s*-->/i;
+      if (gaPlaceholderRegex.test(html)) {
+        html = html.replace(gaPlaceholderRegex, gaScript);
+      } else {
+        // Fallback: inject before </head> if placeholder not found
+        html = html.replace(/<\/head>/i, `${gaScript}\n</head>`);
+      }
 
       // Inject preloads for critical images
       let preloadTags = '';

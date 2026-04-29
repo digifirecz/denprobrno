@@ -27,9 +27,15 @@ export default function Privacy() {
           const data = globalDoc.data();
           dynamicSettings.title = data.title || settings.title;
           dynamicSettings.copyright = data.copyright || settings.copyright;
-          if (data.updatedAt) {
+          if (data.updatedAt && typeof data.updatedAt.toDate === 'function') {
             const date = data.updatedAt.toDate();
             dynamicSettings.updatedAt = date.toLocaleDateString('cs-CZ');
+          } else if (data.updatedAt) {
+            // Fallback if it's already a string or date
+            const date = new Date(data.updatedAt);
+            if (!isNaN(date.getTime())) {
+              dynamicSettings.updatedAt = date.toLocaleDateString('cs-CZ');
+            }
           }
         }
 
