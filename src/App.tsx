@@ -4,7 +4,6 @@ import { Toaster } from 'react-hot-toast';
 import { Loader2 } from 'lucide-react';
 import { AuthProvider, useAuth } from './context/AuthContext.tsx';
 import { CookieConsent } from './components/CookieConsent.tsx';
-import { GoogleAnalytics } from './components/GoogleAnalytics.tsx';
 import Home from './pages/Home.tsx';
 import Login from './pages/Login.tsx';
 import Admin from './pages/Admin.tsx';
@@ -33,7 +32,6 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 function AppRoutes() {
   return (
     <>
-      <GoogleAnalytics />
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/gdpr" element={<Privacy />} />
