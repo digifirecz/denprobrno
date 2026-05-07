@@ -157,8 +157,6 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
     toast.error(errorMessage);
   }
 
-  // We throw to stop the calling operation, but we wrap it to avoid showing raw JSON to user if caught by high-level handlers
-  throw new Error(`DATABASE_ERROR: ${errorMessage}`);
 }
 
 const getErrorMessage = (err: any, fallback: string) => {
