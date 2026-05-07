@@ -95,10 +95,12 @@ interface FirestoreErrorInfo {
 
 function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
   const errorMessage = error instanceof Error ? error.message : String(error);
+  const errorCode = (error as any)?.code || '';
   // Robust check for invalid credential error which usually means session expired or token invalid
-  const isAuthError = errorMessage.includes('auth/invalid-credential') || 
-                      errorMessage.includes('permission-denied') || 
-                      errorMessage.includes('Insufficient permissions') ||
+  const isAuthError = errorMessage.includes('auth/invalid-credential') ||
+                      errorMessage.includes('permission-denied') ||
+                      errorCode.includes('permission-denied') ||
+                      errorMessage.toLowerCase().includes('insufficient permissions') ||
                       errorMessage.includes('auth/user-token-expired') ||
                       errorMessage.includes('auth/id-token-expired');
 
@@ -5034,6 +5036,8 @@ export default function Admin() {
   const [listsCount, setListsCount] = useState(0);
 
   useEffect(() => {
+    if (!user) return;
+
     const unsubGlobal = onSnapshot(doc(db, 'settings', 'global'), (snapshot) => {
       if (snapshot.exists()) {
         setLogoPassive(snapshot.data().logoPassive || '');
@@ -5091,7 +5095,7 @@ export default function Admin() {
       unsubLists();
       unsubSub();
     };
-  }, []);
+  }, [user]);
 
   const handleLogout = async (e?: React.MouseEvent) => {
     if (e) {
