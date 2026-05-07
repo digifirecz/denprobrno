@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/react';
 import UserPage from './User.tsx';
 import { toast } from 'react-hot-toast';
 import { Routes, Route, Link, useNavigate } from 'react-router-dom';
@@ -96,13 +97,15 @@ interface FirestoreErrorInfo {
 function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
   const errorMessage = error instanceof Error ? error.message : String(error);
   const errorCode = (error as any)?.code || '';
-  // Robust check for invalid credential error which usually means session expired or token invalid
-  const isAuthError = errorMessage.includes('auth/invalid-credential') ||
-                      errorMessage.includes('permission-denied') ||
-                      errorCode.includes('permission-denied') ||
-                      errorMessage.toLowerCase().includes('insufficient permissions') ||
-                      errorMessage.includes('auth/user-token-expired') ||
-                      errorMessage.includes('auth/id-token-expired');
+  // Only token-expired/invalid errors should trigger logout — permission-denied should not
+  const isTokenExpiredError = errorMessage.includes('auth/invalid-credential') ||
+                              errorMessage.includes('auth/user-token-expired') ||
+                              errorMessage.includes('auth/id-token-expired') ||
+                              errorCode === 'auth/user-token-expired' ||
+                              errorCode === 'auth/id-token-expired';
+  const isPermissionError = errorCode === 'permission-denied' ||
+                            errorMessage.toLowerCase().includes('insufficient permissions') ||
+                            errorMessage.includes('permission-denied');
 
   const errInfo: FirestoreErrorInfo = {
     error: errorMessage,
@@ -120,25 +123,40 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
     operationType,
     path
   }
-  
-  if (isAuthError) {
-    console.warn(`Authentication/Permission Error at ${path}: `, errorMessage);
-    // Only show toast and redirect if we haven't already started the process
+
+  Sentry.captureException(error instanceof Error ? error : new Error(errorMessage), {
+    level: isPermissionError ? 'warning' : 'error',
+    tags: {
+      collection: path ?? 'unknown',
+      operation: operationType,
+      error_code: errorCode || 'unknown',
+    },
+    extra: {
+      userId: errInfo.authInfo.userId,
+      email: errInfo.authInfo.email,
+      emailVerified: errInfo.authInfo.emailVerified,
+      page: window.location.pathname,
+    },
+  });
+
+  if (isTokenExpiredError) {
+    console.warn(`Token expired at ${path}: `, errorMessage);
     if (!window.location.pathname.includes('/login')) {
-      toast.error(`Relace vypršela nebo chybí oprávnění (${path}). Přihlaste se prosím znovu.`);
-      
-      // Sign out to clean up state and redirect
+      toast.error('Relace vypršela. Přihlaste se prosím znovu.');
       signOut(auth).finally(() => {
         setTimeout(() => {
           window.location.href = '/login';
         }, 1500);
       });
     }
+  } else if (isPermissionError) {
+    console.warn(`Permission denied at ${path}: `, errorMessage);
+    toast.error(errorMessage);
   } else {
     console.error('Firestore Error: ', JSON.stringify(errInfo));
-    toast.error(`Chyba databáze: ${errorMessage}`);
+    toast.error(errorMessage);
   }
-  
+
   // We throw to stop the calling operation, but we wrap it to avoid showing raw JSON to user if caught by high-level handlers
   throw new Error(`DATABASE_ERROR: ${errorMessage}`);
 }
@@ -5082,7 +5100,9 @@ export default function Admin() {
     const qSub = query(collection(db, 'contactSubmissions'));
     const unsubSub = onSnapshot(qSub, (snapshot) => {
       setSubmissionsCount(snapshot.size);
-    }, (err) => handleFirestoreError(err, OperationType.LIST, 'contactSubmissions'));
+    }, (err) => {
+      console.warn('Could not load contactSubmissions count:', err.message);
+    });
 
     return () => {
       unsubGlobal();
