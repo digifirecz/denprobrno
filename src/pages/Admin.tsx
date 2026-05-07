@@ -585,7 +585,7 @@ const IntroManager = () => {
         const data = snapshot.data();
         setHeroData({
           imageUrl: data.imageUrl || '',
-          imageAlt: data.imageAlt || 'DEN PRO BRNO',
+          imageAlt: data.imageAlt || '',
           moto: data.moto ?? 'Naším cílem je přinést do města radost, povzbuzení a naději, která má skutečný přesah',
           quote: data.quote ?? 'Přijďte strávit den, který může něco změnit'
         });

@@ -8,10 +8,10 @@ import { doc, getDoc } from 'firebase/firestore';
 export default function Privacy() {
   const navigate = useNavigate();
   const [settings, setSettings] = useState({
-    title: 'Den pro Brno',
-    email: 'info@denprobrno.cz',
-    copyright: '© 2026 DEN PRO BRNO',
-    updatedAt: '29. 04. 2026'
+    title: '',
+    email: '',
+    copyright: '',
+    updatedAt: ''
   });
   const [loading, setLoading] = useState(true);
 
@@ -155,7 +155,7 @@ export default function Privacy() {
       {/* Simple Footer */}
       <footer className="py-12 border-t border-slate-200 bg-white">
         <div className="max-w-4xl mx-auto px-6 text-center">
-            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">{settings.copyright || `© ${new Date().getFullYear()} ${settings.title}`} — VYROBENO S LÁSKOU K BRNU</p>
+            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">{settings.copyright || `© ${new Date().getFullYear()} ${settings.title}`}</p>
         </div>
       </footer>
     </div>

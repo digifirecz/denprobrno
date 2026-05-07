@@ -227,8 +227,8 @@ export default function Home() {
   const [contactInfo, setContactInfo] = useState({ 
     email: '', 
     phone: '',
-    welcomeText: 'Ať už přijdete na chvíli, nebo zůstanete celý den, jste vítáni\n\nPřijďte sami, s přáteli nebo s rodinou\n\nPřijďte se podívat, odpočinout si nebo se nechat inspirovat\n\nNebojte se zeptat',
-    tagline: 'Den pro Brno je tu pro vás'
+    welcomeText: '',
+    tagline: ''
   });
   const [contactForm, setContactForm] = useState({ name: '', email: '', message: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -265,20 +265,20 @@ export default function Home() {
   });
   const [heroData, setHeroData] = useState({ 
     imageUrl: '', 
-    imageAlt: 'DEN PRO BRNO - 30. června u Janáčkova divadla',
+    imageAlt: '',
     moto: 'Naším cílem je přinést do města radost, povzbuzení a naději, která má skutečný přesah',
     quote: 'Přijďte strávit den, který může něco změnit'
   });
   const [globalSettings, setGlobalSettings] = useState({
     logoPassive: '',
-    logoPassiveAlt: 'Logo Den pro Brno',
+    logoPassiveAlt: '',
     logoActive: '',
-    logoActiveAlt: 'Logo Den pro Brno',
-    copyright: '© 2026 DEN PRO BRNO',
-    faviconAlt: 'Ikona webu',
+    logoActiveAlt: '',
+    copyright: '',
+    faviconAlt: '',
     ogImageUrl: '',
-    ogImageAlt: 'Den pro Brno - Festival',
-    primaryDomain: 'https://denprobrno.cz'
+    ogImageAlt: '',
+    primaryDomain: ''
   });
 
   // Fetch Global Settings (Logos, Title, etc.)
@@ -288,14 +288,14 @@ export default function Home() {
         const data = snapshot.data();
         setGlobalSettings({
           logoPassive: data.logoPassive || '',
-          logoPassiveAlt: data.logoPassiveAlt || 'Logo Den pro Brno',
+          logoPassiveAlt: data.logoPassiveAlt || '',
           logoActive: data.logoActive || '',
-          logoActiveAlt: data.logoActiveAlt || 'Logo Den pro Brno',
-          copyright: data.copyright || '© 2026 DEN PRO BRNO',
-          faviconAlt: data.faviconAlt || 'Ikona webu',
+          logoActiveAlt: data.logoActiveAlt || '',
+          copyright: data.copyright || '',
+          faviconAlt: data.faviconAlt || '',
           ogImageUrl: data.ogImageUrl || '',
-          ogImageAlt: data.ogImageAlt || 'Den pro Brno - Festival',
-          primaryDomain: data.primaryDomain || 'https://denprobrno.cz'
+          ogImageAlt: data.ogImageAlt || '',
+          primaryDomain: data.primaryDomain || ''
         });
         if (data.title) {
           document.title = data.title;
@@ -320,7 +320,7 @@ export default function Home() {
           canonical.setAttribute('rel', 'canonical');
           document.head.appendChild(canonical);
         }
-        const baseDomain = (data.primaryDomain || 'https://denprobrno.cz').replace(/\/$/, '');
+        const baseDomain = (data.primaryDomain || '').replace(/\/$/, '');
         canonical.setAttribute('href', baseDomain + window.location.pathname);
 
         // Structured Data (JSON-LD)
@@ -336,20 +336,20 @@ export default function Home() {
         const eventData = {
           "@context": "https://schema.org",
           "@type": "Event",
-          "name": data.title || "Den pro Brno",
-          "description": data.description || "Kulturně-komunitní festival pro Brno",
-          "image": data.faviconUrl || "",
+          "name": data.title || "",
+          "description": data.description || "",
+          "image": data.ogImageUrl || data.faviconUrl || "",
           "location": {
             "@type": "Place",
-            "name": data.eventLocationName || "u Janáčkova divadla",
+            "name": data.eventLocationName || "",
             "address": {
               "@type": "PostalAddress",
-              "addressLocality": data.eventCity || "Brno",
+              "addressLocality": data.eventCity || "",
               "addressCountry": "CZ"
             }
           },
-          "startDate": `${data.eventDate || '2026-05-30'}T${data.eventStartTime || '10:00:00'}+02:00`,
-          "endDate": `${data.eventDate || '2026-05-30'}T${data.eventEndTime || '22:00:00'}+02:00`,
+          "startDate": data.eventDate && data.eventStartTime ? `${data.eventDate}T${data.eventStartTime}+02:00` : "",
+          "endDate": data.eventDate && data.eventEndTime ? `${data.eventDate}T${data.eventEndTime}+02:00` : "",
           "eventStatus": "https://schema.org/EventScheduled",
           "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode"
         };
@@ -365,13 +365,7 @@ export default function Home() {
         if (data.ogTitle) updateMeta('twitter:title', data.ogTitle);
         if (data.ogDescription) updateMeta('twitter:description', data.ogDescription);
         if (data.ogImageUrl) updateMeta('twitter:image', data.ogImageUrl);
-        if (data.ogImageUrl) updateMeta('og:image', data.ogImageUrl, true);
-        
-        // Twitter Card
-        updateMeta('twitter:card', 'summary_large_image');
-        if (data.ogTitle) updateMeta('twitter:title', data.ogTitle);
-        if (data.ogDescription) updateMeta('twitter:description', data.ogDescription);
-        if (data.ogImageUrl) updateMeta('twitter:image', data.ogImageUrl);
+        if (data.ogImageUrl) updateMeta('og:url', baseDomain, true);
       }
     });
   }, []);
@@ -498,7 +492,7 @@ export default function Home() {
         const data = snapshot.data();
         setHeroData({
           imageUrl: data.imageUrl || '',
-          imageAlt: data.imageAlt || 'DEN PRO BRNO',
+          imageAlt: data.imageAlt || '',
           moto: data.moto ?? 'Naším cílem je přinést do města radost, povzbuzení a naději, která má skutečný přesah',
           quote: data.quote ?? 'Přijďte strávit den, který může něco změnit'
         });
@@ -909,7 +903,7 @@ export default function Home() {
                       >
                         {item.imageUrl && (
                           <div className="w-full h-40 overflow-hidden bg-white/5 border-b border-white/10">
-                            <img src={item.imageUrl} alt={item.name} className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-700" referrerPolicy="no-referrer" />
+                            <img src={item.imageUrl} alt={item.name} className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-700" referrerPolicy="no-referrer" loading="lazy" />
                           </div>
                         )}
                         <div className="p-6 flex-1 flex flex-col">
@@ -975,7 +969,7 @@ export default function Home() {
                       >
                         {item.imageUrl && (
                           <div className="w-full h-40 overflow-hidden bg-white/5 border-b border-white/10">
-                            <img src={item.imageUrl} alt={item.name} className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-700" referrerPolicy="no-referrer" />
+                            <img src={item.imageUrl} alt={item.name} className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-700" referrerPolicy="no-referrer" loading="lazy" />
                           </div>
                         )}
                         <div className="p-6 flex-1 flex flex-col">
@@ -1083,7 +1077,7 @@ export default function Home() {
                                 <div key={gi} className="group shrink-0 max-w-[200px] flex flex-col items-center text-center">
                                   <div className="w-28 h-28 rounded-full overflow-hidden mb-4 bg-white/10 border-2 border-white/20 shrink-0 shadow-lg">
                                     {guest.imageUrl ? (
-                                      <img src={guest.imageUrl} alt={guest.name || 'host'} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                                      <img src={guest.imageUrl} alt={guest.name || 'host'} className="w-full h-full object-cover" referrerPolicy="no-referrer" loading="lazy" />
                                     ) : (
                                       <div className="w-full h-full flex items-center justify-center text-white/20">
                                         <Users size={24} />
@@ -1109,7 +1103,7 @@ export default function Home() {
                               <div key={oi} className="group shrink-0 max-w-[200px] flex flex-col items-center text-center">
                                 <div className="w-28 h-28 rounded-full overflow-hidden mb-4 bg-white/10 border-2 border-white/20 shrink-0 shadow-lg">
                                   {org.imageUrl ? (
-                                    <img src={org.imageUrl} alt={org.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                                    <img src={org.imageUrl} alt={org.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" loading="lazy" />
                                   ) : (
                                     <div className="w-full h-full flex items-center justify-center text-white/20">
                                       <Users size={24} />
@@ -1260,7 +1254,7 @@ export default function Home() {
                             <>
                               {item.image && (
                                 <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white bg-white shrink-0 p-1 flex items-center justify-center">
-                                  <img src={item.image} className="w-full h-full object-contain" alt={item.name} referrerPolicy="no-referrer" />
+                                  <img src={item.image} className="w-full h-full object-contain" alt={item.name} referrerPolicy="no-referrer" loading="lazy" />
                                 </div>
                               )}
                               <div className="text-left">
@@ -1428,7 +1422,7 @@ export default function Home() {
                                 >
                                   {item.image && (
                                     <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-white bg-white group-hover/item:border-brand-teal transition-colors shrink-0 p-2 flex items-center justify-center shadow-md">
-                                      <img src={item.image} className="w-full h-full object-contain transition-all duration-500" alt={item.name} referrerPolicy="no-referrer" />
+                                      <img src={item.image} className="w-full h-full object-contain transition-all duration-500" alt={item.name} referrerPolicy="no-referrer" loading="lazy" />
                                     </div>
                                   )}
                                   <div className="space-y-2 flex-1">
@@ -1443,7 +1437,7 @@ export default function Home() {
                                 <div className="flex gap-6 text-left items-start">
                                   {item.image && (
                                     <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-white bg-white shrink-0 p-2 flex items-center justify-center shadow-md">
-                                      <img src={item.image} className="w-full h-full object-contain transition-all duration-500" alt={item.name} referrerPolicy="no-referrer" />
+                                      <img src={item.image} className="w-full h-full object-contain transition-all duration-500" alt={item.name} referrerPolicy="no-referrer" loading="lazy" />
                                     </div>
                                   )}
                                   <div className="space-y-2 flex-1">
