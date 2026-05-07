@@ -333,10 +333,7 @@ const COMMUNITY_ICONS = [
 ];
 
 const ProgramDashboard = () => {
-  const [headerData, setHeaderData] = useState<ProgramHeader>({ 
-    topTitle: 'Lineup 2026', 
-    description: 'Po celý den bude probíhat několik typů programu, mezi kterými si každý najde to své' 
-  });
+  const [headerData, setHeaderData] = useState<ProgramHeader>({ topTitle: '', description: '' });
   const [isHeaderModalOpen, setIsHeaderModalOpen] = useState(false);
   const [headerFormData, setHeaderFormData] = useState({ topTitle: '', description: '' });
   const [isHeaderSubmitting, setIsHeaderSubmitting] = useState(false);
@@ -540,12 +537,7 @@ const isValidImageUrl = (url: string | undefined | null) => {
 };
 
 const IntroManager = () => {
-  const [heroData, setHeroData] = useState({ 
-    imageUrl: '', 
-    imageAlt: 'DEN PRO BRNO - 30. června u Janáčkova divadla',
-    moto: 'Naším cílem je přinést do města radost, povzbuzení a naději, která má skutečný přesah',
-    quote: 'Přijďte strávit den, který může něco změnit'
-  });
+  const [heroData, setHeroData] = useState({ imageUrl: '', imageAlt: '', moto: '', quote: '' });
   const [introSections, setIntroSections] = useState<IntroSection[]>([]);
   const [infoItems, setInfoItems] = useState<IntroInfoItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -1310,7 +1302,7 @@ const ProgramManager = () => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
 
-  const [headerData, setHeaderData] = useState({ subtitle: 'Hudba a koncerty' });
+  const [headerData, setHeaderData] = useState({ subtitle: '' });
   const [isHeaderModalOpen, setIsHeaderModalOpen] = useState(false);
   const [headerFormData, setHeaderFormData] = useState({ subtitle: '' });
   const [isHeaderSubmitting, setIsHeaderSubmitting] = useState(false);
@@ -1838,10 +1830,7 @@ const PracticalInfoManager = () => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [infoToDelete, setInfoToDelete] = useState<PracticalInfo | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [headerData, setHeaderData] = useState<InfoHeader>({ 
-    topTitle: 'Informace', 
-    description: 'Vše, co potřebujete vědět před návštěvou festivalu' 
-  });
+  const [headerData, setHeaderData] = useState<InfoHeader>({ topTitle: '', description: '' });
   const [isHeaderModalOpen, setIsHeaderModalOpen] = useState(false);
   const [headerFormData, setHeaderFormData] = useState({ topTitle: '', description: '' });
   const [isHeaderSubmitting, setIsHeaderSubmitting] = useState(false);
@@ -2161,7 +2150,7 @@ const TalkshowManager = () => {
   const [talkshowToDelete, setTalkshowToDelete] = useState<Talkshow | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const [headerData, setHeaderData] = useState({ subtitle: 'Talkshow a diskuse' });
+  const [headerData, setHeaderData] = useState({ subtitle: '' });
   const [isHeaderModalOpen, setIsHeaderModalOpen] = useState(false);
   const [headerFormData, setHeaderFormData] = useState({ subtitle: '' });
   const [isHeaderSubmitting, setIsHeaderSubmitting] = useState(false);
@@ -2777,7 +2766,7 @@ const FamilyProgramManager = () => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [activeIconIndex, setActiveIconIndex] = useState<number | null>(null);
 
-  const [headerData, setHeaderData] = useState({ subtitle: 'Program pro děti a rodiny' });
+  const [headerData, setHeaderData] = useState({ subtitle: '' });
   const [isHeaderModalOpen, setIsHeaderModalOpen] = useState(false);
   const [headerFormData, setHeaderFormData] = useState({ subtitle: '' });
   const [isHeaderSubmitting, setIsHeaderSubmitting] = useState(false);
@@ -3274,7 +3263,7 @@ const CommunityManager: React.FC = () => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isIconModalOpen, setIsIconModalOpen] = useState(false);
 
-  const [headerData, setHeaderData] = useState({ subtitle: 'Prezentace organizací a zóna klidu' });
+  const [headerData, setHeaderData] = useState({ subtitle: '' });
   const [isHeaderModalOpen, setIsHeaderModalOpen] = useState(false);
   const [headerFormData, setHeaderFormData] = useState({ subtitle: '' });
   const [isHeaderSubmitting, setIsHeaderSubmitting] = useState(false);
@@ -3910,7 +3899,7 @@ const AboutManager = () => {
     items: [] as { name: string; description: string; link?: string; image?: string }[],
     order: 0 
   });
-  const [headerData, setHeaderData] = useState({ subtitle: 'Příběh festivalu' });
+  const [headerData, setHeaderData] = useState({ subtitle: '' });
   const [isHeaderModalOpen, setIsHeaderModalOpen] = useState(false);
   const [headerFormData, setHeaderFormData] = useState({ subtitle: '' });
   const [isHeaderSubmitting, setIsHeaderSubmitting] = useState(false);
@@ -4409,12 +4398,7 @@ const AboutManager = () => {
 
 const ContactManager = () => {
   const [submissions, setSubmissions] = useState<ContactSubmission[]>([]);
-  const [contactInfo, setContactInfo] = useState({ 
-    email: '', 
-    phone: '',
-    welcomeText: 'Ať už přijdete na chvíli, nebo zůstanete celý den, jste vítáni\n\nPřijďte sami, s přáteli nebo s rodinou\n\nPřijďte se podívat, odpočinout si nebo se nechat inspirovat\n\nNebojte se zeptat',
-    tagline: 'Den pro Brno je tu pro vás'
-  });
+  const [contactInfo, setContactInfo] = useState({ email: '', phone: '', welcomeText: '', tagline: '' });
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -4638,24 +4622,24 @@ const ContactManager = () => {
 const SettingsManager = () => {
   const [logoPassive, setLogoPassive] = useState('');
   const [logoActive, setLogoActive] = useState('');
-  const [siteTitle, setSiteTitle] = useState('Den pro Brno');
-  const [siteDescription, setSiteDescription] = useState('Den pro Brno je kulturně-komunitní festival, který spojuje lidi a oslavuje naše město.');
-  const [ogTitle, setOgTitle] = useState('Den pro Brno');
-  const [ogDescription, setOgDescription] = useState('Kulturně-komunitní festival pro Brno');
+  const [siteTitle, setSiteTitle] = useState('');
+  const [siteDescription, setSiteDescription] = useState('');
+  const [ogTitle, setOgTitle] = useState('');
+  const [ogDescription, setOgDescription] = useState('');
   const [ogImageUrl, setOgImageUrl] = useState('');
-  const [ogImageAlt, setOgImageAlt] = useState('Den pro Brno - Festival');
+  const [ogImageAlt, setOgImageAlt] = useState('');
   const [faviconUrl, setFaviconUrl] = useState('');
-  const [faviconAlt, setFaviconAlt] = useState('Favicon');
-  const [logoPassiveAlt, setLogoPassiveAlt] = useState('Logo Passive');
-  const [logoActiveAlt, setLogoActiveAlt] = useState('Logo Active');
-  const [primaryDomain, setPrimaryDomain] = useState('https://denprobrno.cz');
+  const [faviconAlt, setFaviconAlt] = useState('');
+  const [logoPassiveAlt, setLogoPassiveAlt] = useState('');
+  const [logoActiveAlt, setLogoActiveAlt] = useState('');
+  const [primaryDomain, setPrimaryDomain] = useState('');
   const [gaMeasurementId, setGaMeasurementId] = useState('');
-  const [copyrightText, setCopyrightText] = useState('© 2026 DEN PRO BRNO');
-  const [eventDate, setEventDate] = useState('2026-05-30');
-  const [eventStartTime, setEventStartTime] = useState('10:00:00');
-  const [eventEndTime, setEventEndTime] = useState('22:00:00');
-  const [eventLocationName, setEventLocationName] = useState('u Janáčkova divadla');
-  const [eventCity, setEventCity] = useState('Brno');
+  const [copyrightText, setCopyrightText] = useState('');
+  const [eventDate, setEventDate] = useState('');
+  const [eventStartTime, setEventStartTime] = useState('');
+  const [eventEndTime, setEventEndTime] = useState('');
+  const [eventLocationName, setEventLocationName] = useState('');
+  const [eventCity, setEventCity] = useState('');
   const [isUploadingPassive, setIsUploadingPassive] = useState(false);
   const [isUploadingActive, setIsUploadingActive] = useState(false);
   const [isUploadingFavicon, setIsUploadingFavicon] = useState(false);
@@ -4668,24 +4652,24 @@ const SettingsManager = () => {
         const data = doc.data();
         setLogoPassive(data.logoPassive || '');
         setLogoActive(data.logoActive || '');
-        setSiteTitle(data.title || 'Den pro Brno');
-        setSiteDescription(data.description || 'Den pro Brno je kulturně-komunitní festival, který spojuje lidi a oslavuje naše město.');
-        setOgTitle(data.ogTitle || 'Den pro Brno');
-        setOgDescription(data.ogDescription || 'Kulturně-komunitní festival pro Brno');
+        setSiteTitle(data.title || '');
+        setSiteDescription(data.description || '');
+        setOgTitle(data.ogTitle || '');
+        setOgDescription(data.ogDescription || '');
         setOgImageUrl(data.ogImageUrl || '');
-        setOgImageAlt(data.ogImageAlt || 'Den pro Brno - Festival');
+        setOgImageAlt(data.ogImageAlt || '');
         setFaviconUrl(data.faviconUrl || '');
-        setFaviconAlt(data.faviconAlt || 'Ikona webu');
-        setLogoPassiveAlt(data.logoPassiveAlt || 'Logo Den pro Brno - tmavé');
-        setLogoActiveAlt(data.logoActiveAlt || 'Logo Den pro Brno - světlé');
-        setPrimaryDomain(data.primaryDomain || 'https://denprobrno.cz');
+        setFaviconAlt(data.faviconAlt || '');
+        setLogoPassiveAlt(data.logoPassiveAlt || '');
+        setLogoActiveAlt(data.logoActiveAlt || '');
+        setPrimaryDomain(data.primaryDomain || '');
         setGaMeasurementId(data.gaMeasurementId || '');
-        setCopyrightText(data.copyright || '© 2026 DEN PRO BRNO');
-        setEventDate(data.eventDate || '2026-05-30');
-        setEventStartTime(data.eventStartTime || '10:00:00');
-        setEventEndTime(data.eventEndTime || '22:00:00');
-        setEventLocationName(data.eventLocationName || 'u Janáčkova divadla');
-        setEventCity(data.eventCity || 'Brno');
+        setCopyrightText(data.copyright || '');
+        setEventDate(data.eventDate || '');
+        setEventStartTime(data.eventStartTime || '');
+        setEventEndTime(data.eventEndTime || '');
+        setEventLocationName(data.eventLocationName || '');
+        setEventCity(data.eventCity || '');
       }
     });
   }, []);

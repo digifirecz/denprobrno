@@ -4,11 +4,11 @@ Tato aplikace slouží jako správa kulturně-komunitního festivalu "Den pro Br
 
 ## Obsah
 
-1. [Technologický stack](#technologický-stack)
-2. [Fungování aplikace](#fungování-aplikace)
-3. [Sestavení a nasazení](#sestavení-build-a-nasazení)
-4. [Error handling](#4-error-handling)
-5. [Firestore pravidla a nasazení](#5-firestore-pravidla-a-nasazení)
+1. [Technologický stack](#1-technologický-stack)
+2. [Fungování aplikace](#2-fungování-aplikace)
+3. [Sestavení a nasazení](#3-sestavení-build-a-nasazení)
+4. [Firebase a databáze](#4-firebase-a-databáze)
+5. [Error handling](#5-error-handling)
 
 ## 1. Technologický stack
 
@@ -55,7 +55,45 @@ Pro zprovoznění projektu lokálně nebo vygenerování produkční verze postu
 
 Tento příkaz spustí `vite build`, který optimalizuje a zkompiluje frontendový kód do statických souborů ve složce `dist/`. Tyto soubory jsou pak servírovány backendem (Express server v `server.ts`) v produkčním prostředí při nastavení `NODE_ENV=production`.
 
-## 4. Error handling
+## 4. Firebase a databáze
+
+### Připojení — proměnné prostředí
+
+Projekt vyžaduje soubor `.env` v rootu (není v gitu). Lokálně ho vytvoř ručně, na Vercelu přidej každou proměnnou přes **Settings → Environment Variables**.
+
+```env
+# Firebase — připojení k projektu den-pro-brno
+VITE_FIREBASE_API_KEY=
+VITE_FIREBASE_AUTH_DOMAIN=
+VITE_FIREBASE_PROJECT_ID=
+VITE_FIREBASE_STORAGE_BUCKET=
+VITE_FIREBASE_MESSAGING_SENDER_ID=
+VITE_FIREBASE_APP_ID=
+VITE_FIREBASE_MEASUREMENT_ID=
+
+# Sentry — monitoring chyb (volitelné, ale doporučené)
+VITE_SENTRY_DSN=
+```
+
+Hodnoty pro Firebase najdeš v [Firebase konzoli](https://console.firebase.google.com) → projekt `den-pro-brno` → Project Settings → Your apps. Sentry DSN najdeš v Sentry → Settings → Projects → Client Keys.
+
+> Všechny `VITE_*` proměnné jsou součástí výsledného JS bundle — neukládej sem tajné serverové klíče.
+
+### Firestore pravidla
+
+Přístupová pravidla databáze jsou definována v souboru `firestore.rules`. Po každé změně tohoto souboru je nutné pravidla ručně nasadit na Firebase — jinak zůstanou platná stará pravidla v cloudu.
+
+**Požadavky:**
+- nainstalované Firebase CLI: `sudo npm install -g firebase-tools`
+- přihlášení: `firebase login`
+- nastavený projekt: `firebase use --add` (zvolíš `den-pro-brno`, alias `default`)
+
+**Nasazení:**
+```bash
+firebase deploy --only firestore:rules
+```
+
+## 5. Error handling
 
 Chyby z Firestore jsou zachyceny centrálně funkcí `handleFirestoreError` v `Admin.tsx`. Ta rozlišuje tři typy situací — expirovaný token (přesměruje na přihlášení), nedostatečná oprávnění (zobrazí zprávu) a ostatní neočekávané chyby.
 
@@ -73,21 +111,3 @@ Každá zachycená chyba obsahuje:
 - URL stránky kde k chybě došlo
 
 Při každé chybě se navíc nahraje session replay (záznam co uživatel dělal těsně předtím), který je dostupný přímo v Sentry.
-
-## 5. Firestore pravidla a nasazení
-
-Přístupová pravidla databáze jsou definována v souboru `firestore.rules`. Po každé změně tohoto souboru je nutné pravidla ručně nasadit na Firebase — jinak zůstanou platná stará pravidla v cloudu.
-
-### Požadavky
-
-- nainstalované Firebase CLI: `sudo npm install -g firebase-tools`
-- přihlášení: `firebase login`
-- nastavený projekt: `firebase use --add` (zvolíš `den-pro-brno`, alias `default`)
-
-### Nasazení pravidel
-
-```bash
-firebase deploy --only firestore:rules
-```
-
-Tímto příkazem se aktualizují pravidla přímo v Firebase konzoli. Změny se projeví okamžitě.
