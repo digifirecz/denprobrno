@@ -57,7 +57,15 @@ interface PracticalInfo {
 
 interface Guest {
   name: string;
+  desc: string;
+  imageUrl?: string;
+}
+
+interface Organizer {
+  id: string;
   role: string;
+  name: string;
+  desc: string;
   imageUrl?: string;
 }
 
@@ -66,12 +74,8 @@ interface Talkshow {
   title: string;
   guestsTitle: string;
   guests: Guest[];
-  moderatorName: string;
-  moderatorRole: string;
-  moderatorImage?: string;
-  closingWordName?: string;
-  closingWordRole?: string;
-  closingWordImage?: string;
+  organizersTitle: string;
+  organizers: Organizer[];
   desc: string;
   order: number;
   icon?: string;
@@ -1069,71 +1073,55 @@ export default function Home() {
                           </div>
                         </div>
                       
-                      {/* Hosté a moderátor */}
-                      {(item.guestsTitle || item.guests?.some(g => g.name || g.role) || item.moderatorName || item.moderatorRole) && (
-                        <div className="flex flex-col md:flex-row justify-between items-start gap-12 text-white pb-8 border-b border-white/10 mb-8">
-                          {/* Hosté */}
-                          {(item.guestsTitle || item.guests?.some(g => g.name || g.role)) && (
-                            <div className="flex-1 space-y-6 w-full">
-                              {item.guestsTitle && <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/40">{item.guestsTitle}</p>}
-                              <div className="flex flex-wrap gap-y-8 gap-x-12">
-                                {item.guests?.map((guest, gi) => (
-                                  (guest.name || guest.role) && (
-                                    <div key={gi} className="group shrink-0 max-w-[200px] flex flex-col items-center text-center">
-                                      {guest.imageUrl && (
-                                        <div className="w-28 h-28 rounded-full overflow-hidden mb-4 bg-white/10 border-2 border-white/20 shrink-0 shadow-lg">
-                                          <img src={guest.imageUrl} alt={guest.name || 'host'} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                                        </div>
-                                      )}
-                                      {guest.name && <p className="text-xl font-bold tracking-tight text-white leading-tight">{guest.name}</p>}
-                                      {guest.role && <p className="text-sm text-white/50 font-medium mt-1 leading-snug">{guest.role}</p>}
-                                    </div>
-                                  )
-                                ))}
-                              </div>
-                            </div>
-                          )}
+                      {/* Hosté */}
+                      {(item.guestsTitle || item.guests?.some(g => g.name || (g as any).desc)) && (
+                        <div className="space-y-6 pb-8 border-b border-white/10 mb-8">
+                          {item.guestsTitle && <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/40">{item.guestsTitle}</p>}
+                          <div className="flex flex-wrap gap-y-8 gap-x-12">
+                            {item.guests?.map((guest, gi) => (
+                              (guest.name || (guest as any).desc) && (
+                                <div key={gi} className="group shrink-0 max-w-[200px] flex flex-col items-center text-center">
+                                  <div className="w-28 h-28 rounded-full overflow-hidden mb-4 bg-white/10 border-2 border-white/20 shrink-0 shadow-lg">
+                                    {guest.imageUrl ? (
+                                      <img src={guest.imageUrl} alt={guest.name || 'host'} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                                    ) : (
+                                      <div className="w-full h-full flex items-center justify-center text-white/20">
+                                        <Users size={24} />
+                                      </div>
+                                    )}
+                                  </div>
+                                  {guest.name && <p className="text-xl font-bold tracking-tight text-white leading-tight">{guest.name}</p>}
+                                  {(guest as any).desc && <p className="text-sm text-white/50 font-medium mt-1 leading-snug">{(guest as any).desc}</p>}
+                                </div>
+                              )
+                            ))}
+                          </div>
+                        </div>
+                      )}
 
-                          {/* Moderátor Box */}
-                          {(item.moderatorName || item.moderatorRole) && (
-                            <div className="w-full md:w-auto shrink-0">
-                              <div className="bg-white/10 rounded-3xl p-6 pr-36 border border-white/10 relative min-w-[320px]">
-                                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/40 mb-3">Moderuje</p>
-                                {item.moderatorName && <p className="text-xl font-bold tracking-tight text-white mb-0.5">{item.moderatorName}</p>}
-                                {item.moderatorRole && <p className="text-sm text-white/50 font-medium">{item.moderatorRole}</p>}
-                                <div className="absolute right-6 top-1/2 -translate-y-1/2 w-28 h-28 rounded-full overflow-hidden border-2 border-white/20 shrink-0 bg-white/5 shadow-lg">
-                                  {item.moderatorImage ? (
-                                    <img src={item.moderatorImage} alt={item.moderatorName} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                      {/* Organizátoři */}
+                      {item.organizers?.some(o => o.name || o.role) && (
+                        <div className="space-y-6">
+                          {item.organizersTitle && <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/40">{item.organizersTitle}</p>}
+                          <div className="flex flex-wrap gap-6">
+                          {item.organizers.map((org, oi) => (
+                            (org.name || org.role) && (
+                              <div key={oi} className="group shrink-0 max-w-[200px] flex flex-col items-center text-center">
+                                <div className="w-28 h-28 rounded-full overflow-hidden mb-4 bg-white/10 border-2 border-white/20 shrink-0 shadow-lg">
+                                  {org.imageUrl ? (
+                                    <img src={org.imageUrl} alt={org.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                                   ) : (
                                     <div className="w-full h-full flex items-center justify-center text-white/20">
                                       <Users size={24} />
                                     </div>
                                   )}
                                 </div>
+                                {org.name && <p className="text-xl font-bold tracking-tight text-white leading-tight">{org.name}</p>}
+                                {org.desc && <p className="text-sm text-white/50 font-medium mt-1 leading-snug">{org.desc}</p>}
+                                {org.role && <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/30 mt-2">{org.role}</p>}
                               </div>
-                            </div>
-                          )}
-                        </div>
-                      )}
-
-                      {/* Závěrečné slovo */}
-                      {item.closingWordName && (
-                        <div className="flex items-center gap-6 text-white pt-2">
-                          <div className="w-28 h-28 rounded-full bg-white/20 overflow-hidden flex items-center justify-center text-white text-xs font-black tracking-widest shrink-0 shadow-xl border-2 border-white/20">
-                            {item.closingWordImage ? (
-                              <img src={item.closingWordImage} alt={item.closingWordName} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                            ) : (
-                              <span className="text-xl">{item.closingWordName.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2)}</span>
-                            )}
-                          </div>
-                          <div className="text-left">
-                            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/40 mb-2 leading-none">Závěrečné slovo</p>
-                            <p className="text-2xl font-bold tracking-tight text-white mb-0.5">{item.closingWordName}</p>
-                            {item.closingWordRole && (
-                              <p className="text-sm text-white/50 font-medium">
-                                {item.closingWordRole}
-                              </p>
-                            )}
+                            )
+                          ))}
                           </div>
                         </div>
                       )}

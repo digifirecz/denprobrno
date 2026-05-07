@@ -1,4 +1,4 @@
-# Den pro Brno - Technický přehled
+# Technický přehled aplikace
 
 Tato aplikace slouží jako správa kulturně-komunitního festivalu "Den pro Brno". Poskytuje veřejnou část pro návštěvníky a administrační část pro organizátory.
 
@@ -6,9 +6,10 @@ Tato aplikace slouží jako správa kulturně-komunitního festivalu "Den pro Br
 
 1. [Technologický stack](#1-technologický-stack)
 2. [Fungování aplikace](#2-fungování-aplikace)
-3. [Sestavení a nasazení](#3-sestavení-build-a-nasazení)
-4. [Firebase a databáze](#4-firebase-a-databáze)
-5. [Error handling](#5-error-handling)
+3. [Lokální vývoj](#3-lokální-vývoj)
+4. [Sestavení a nasazení](#4-sestavení-build-a-nasazení)
+5. [Firebase a databáze](#5-firebase-a-databáze)
+6. [Error handling](#6-error-handling)
 
 ## 1. Technologický stack
 
@@ -39,7 +40,27 @@ Administrační sekce vyžaduje přihlášení (přes Firebase Auth). Umožňuje
 ### SEO a Meta-data
 Aplikace dynamicky aktualizuje meta-tagy (`<title>`, `description`, `og:image`, `twitter:*`) při načtení dat z Firebase, což zajišťuje správné zobrazení při sdílení na sociálních sítích. URL webu je kanonizováno na primární doménu pro vyhledávače.
 
-## 3. Sestavení (Build) a Nasazení
+## 3. Lokální vývoj
+
+Pro lokální vývoj bez nutnosti pushovat do gitu:
+
+1. **Vytvoř soubor `.env`** v rootu projektu (viz sekce Firebase níže) — bez něj se aplikace nepřipojí k databázi.
+
+2. **Nainstaluj závislosti** (jen poprvé):
+   ```bash
+   npm install
+   ```
+
+3. **Spusť dev server:**
+   ```bash
+   npm run dev
+   ```
+
+Vite spustí server na `http://localhost:5173` s hot reload — změny v kódu se projeví okamžitě bez obnovení stránky. Aplikace se připojuje přímo k produkční Firebase (stejná databáze jako live web).
+
+> `server.ts` (Express) se při `npm run dev` nepoužívá — slouží pouze pro produkční nasazení na Vercelu.
+
+## 4. Sestavení (Build) a nasazení
 
 Pro zprovoznění projektu lokálně nebo vygenerování produkční verze postupujte následovně:
 
@@ -55,7 +76,7 @@ Pro zprovoznění projektu lokálně nebo vygenerování produkční verze postu
 
 Tento příkaz spustí `vite build`, který optimalizuje a zkompiluje frontendový kód do statických souborů ve složce `dist/`. Tyto soubory jsou pak servírovány backendem (Express server v `server.ts`) v produkčním prostředí při nastavení `NODE_ENV=production`.
 
-## 4. Firebase a databáze
+## 5. Firebase a databáze
 
 ### Připojení — proměnné prostředí
 
@@ -100,7 +121,7 @@ Po každé změně kteréhokoli souboru je nutné pravidla nasadit — jinak zů
 firebase deploy --only firestore:rules,storage
 ```
 
-## 5. Error handling
+## 6. Error handling
 
 Chyby z Firestore jsou zachyceny centrálně funkcí `handleFirestoreError` v `Admin.tsx`. Ta rozlišuje tři typy situací — expirovaný token (přesměruje na přihlášení), nedostatečná oprávnění (zobrazí zprávu) a ostatní neočekávané chyby.
 

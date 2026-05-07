@@ -199,7 +199,15 @@ interface PracticalInfo {
 interface Guest {
   id: string;
   name: string;
+  desc: string;
+  imageUrl?: string;
+}
+
+interface Organizer {
+  id: string;
   role: string;
+  name: string;
+  desc: string;
   imageUrl?: string;
 }
 
@@ -208,12 +216,8 @@ interface Talkshow {
   title: string;
   guestsTitle: string;
   guests: Guest[];
-  moderatorName: string;
-  moderatorRole: string;
-  moderatorImage?: string;
-  closingWordName?: string;
-  closingWordRole?: string;
-  closingWordImage?: string;
+  organizersTitle: string;
+  organizers: Organizer[];
   desc: string;
   order: number;
   icon?: string;
@@ -2173,12 +2177,8 @@ const TalkshowManager = () => {
     title: '',
     guestsTitle: '',
     guests: [] as Guest[],
-    moderatorName: '',
-    moderatorRole: '',
-    moderatorImage: '',
-    closingWordName: '',
-    closingWordRole: '',
-    closingWordImage: '',
+    organizersTitle: '',
+    organizers: [] as Organizer[],
     desc: '',
     order: 0,
     icon: 'MessageSquare'
@@ -2229,7 +2229,7 @@ const TalkshowManager = () => {
   const handleAddGuest = () => {
     setFormData({
       ...formData,
-      guests: [...formData.guests, { id: Math.random().toString(36).substring(2, 9), name: '', role: '' }]
+      guests: [...formData.guests, { id: Math.random().toString(36).substring(2, 9), name: '', desc: '' }]
     });
   };
 
@@ -2269,22 +2269,43 @@ const TalkshowManager = () => {
     }
   };
 
-  const handleImageUpload = async (field: 'moderatorImage' | 'closingWordImage', e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAddOrganizer = () => {
+    setFormData({
+      ...formData,
+      organizers: [...formData.organizers, { id: Math.random().toString(36).substring(2, 9), role: '', name: '', desc: '' }]
+    });
+  };
+
+  const handleRemoveOrganizer = (index: number) => {
+    deleteStorageFile(formData.organizers[index]?.imageUrl || '');
+    setFormData({
+      ...formData,
+      organizers: formData.organizers.filter((_, i) => i !== index)
+    });
+  };
+
+  const handleOrganizerChange = (index: number, field: keyof Organizer, value: string) => {
+    const next = [...formData.organizers];
+    next[index] = { ...next[index], [field]: value };
+    setFormData({ ...formData, organizers: next });
+  };
+
+  const handleOrganizerImageUpload = async (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
-    const toastId = toast.loading('Nahrávám obrázek...');
+    const toastId = toast.loading('Nahrávám obrázek organizátora...');
     try {
-      await deleteStorageFile((formData as any)[field] || '');
-      const fileName = `talkshow/${editingTalkshow?.id || Date.now()}/${field}/${file.name}`;
+      const org = formData.organizers[index];
+      await deleteStorageFile(org?.imageUrl || '');
+      const orgId = org?.id || Math.random().toString(36).substring(2, 9);
+      const fileName = `talkshow/${editingTalkshow?.id || Date.now()}/organizers/${orgId}/${file.name}`;
       const storageRef = ref(storage, fileName);
       const snapshot = await uploadBytes(storageRef, file);
       const url = await getDownloadURL(snapshot.ref);
-      
-      setFormData({ ...formData, [field]: url });
+      handleOrganizerChange(index, 'imageUrl', url);
       toast.success('Obrázek nahrán', { id: toastId });
     } catch (err: any) {
-      console.error('Image upload failed:', err);
+      console.error('Organizer image upload failed:', err);
       toast.error(`Chyba: ${err.message}`, { id: toastId });
     }
   };
@@ -2295,30 +2316,27 @@ const TalkshowManager = () => {
       setFormData({
         title: item.title,
         guestsTitle: item.guestsTitle || '',
-        guests: (item.guests || []).map(g => ({ ...g, id: g.id || Math.random().toString(36).substring(2, 9) })),
-        moderatorName: item.moderatorName || '',
-        moderatorRole: item.moderatorRole || '',
-        moderatorImage: item.moderatorImage || '',
-        closingWordName: item.closingWordName || '',
-        closingWordRole: item.closingWordRole || '',
-        closingWordImage: item.closingWordImage || '',
+        organizersTitle: item.organizersTitle || '',
+        guests: (item.guests || []).map(g => ({
+          id: g.id || Math.random().toString(36).substring(2, 9),
+          name: g.name || '',
+          desc: (g as any).desc || (g as any).role || '',
+          imageUrl: g.imageUrl
+        })),
+        organizers: (item.organizers || []).map(o => ({ ...o, id: o.id || Math.random().toString(36).substring(2, 9) })),
         desc: item.desc,
         order: item.order || 0,
         icon: item.icon || 'MessageSquare'
       });
     } else {
       setEditingTalkshow(null);
-      setFormData({ 
-        title: '', 
-        guestsTitle: '', 
-        guests: [], 
-        moderatorName: '', 
-        moderatorRole: '', 
-        moderatorImage: '',
-        closingWordName: '',
-        closingWordRole: '',
-        closingWordImage: '',
-        desc: '', 
+      setFormData({
+        title: '',
+        guestsTitle: '',
+        guests: [],
+        organizersTitle: '',
+        organizers: [],
+        desc: '',
         order: talkshows.length,
         icon: 'MessageSquare'
       });
@@ -2334,13 +2352,20 @@ const TalkshowManager = () => {
       const cleanData = {
         title: formData.title,
         guestsTitle: formData.guestsTitle,
-        guests: formData.guests,
-        moderatorName: formData.moderatorName,
-        moderatorRole: formData.moderatorRole,
-        moderatorImage: formData.moderatorImage,
-        closingWordName: formData.closingWordName,
-        closingWordRole: formData.closingWordRole,
-        closingWordImage: formData.closingWordImage,
+        organizersTitle: formData.organizersTitle,
+        guests: formData.guests.map(g => ({
+          id: g.id,
+          name: g.name,
+          desc: g.desc,
+          ...(g.imageUrl ? { imageUrl: g.imageUrl } : {})
+        })),
+        organizers: formData.organizers.map(o => ({
+          id: o.id,
+          role: o.role,
+          name: o.name,
+          desc: o.desc,
+          ...(o.imageUrl ? { imageUrl: o.imageUrl } : {})
+        })),
         desc: formData.desc,
         order: Number(formData.order),
         icon: formData.icon,
@@ -2374,9 +2399,8 @@ const TalkshowManager = () => {
     if (!talkshowToDelete) return;
     setIsDeleting(true);
     try {
-      await deleteStorageFile(talkshowToDelete.moderatorImage || '');
-      await deleteStorageFile(talkshowToDelete.closingWordImage || '');
       await Promise.all((talkshowToDelete.guests || []).map(g => deleteStorageFile(g.imageUrl || '')));
+      await Promise.all((talkshowToDelete.organizers || []).map(o => deleteStorageFile(o.imageUrl || '')));
       await deleteDoc(doc(db, 'talkshows', talkshowToDelete.id));
       toast.success('Úspěšně smazáno!');
       setIsDeleteModalOpen(false);
@@ -2459,77 +2483,55 @@ const TalkshowManager = () => {
                               </div>
                             </div>
                           
-                            {/* Hosté a moderátor */}
-                            {(item.guestsTitle || item.guests?.some(g => g.name || g.role) || item.moderatorName || item.moderatorRole) && (
-                              <div className="flex flex-col md:flex-row justify-between items-start gap-12 text-white pb-8 border-b border-white/10 mb-8">
-                                {/* Hosté */}
-                                {(item.guestsTitle || item.guests?.some(g => g.name || g.role)) && (
-                                  <div className="flex-1 space-y-6 w-full">
-                                    {item.guestsTitle && <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/40">{item.guestsTitle}</p>}
-                                    <div className="flex flex-wrap gap-y-8 gap-x-12">
-                                      {item.guests?.map((guest, gi) => (
-                                        (guest.name || guest.role) && (
-                                          <div key={gi} className="group shrink-0 max-w-[200px] flex flex-col items-center text-center">
-                                            <div className="w-28 h-28 rounded-full overflow-hidden mb-4 bg-white/10 border-2 border-white/20 shrink-0 shadow-lg">
-                                              {guest.imageUrl ? (
-                                                <img src={guest.imageUrl} alt={guest.name || 'host'} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                                              ) : (
-                                                <div className="w-full h-full flex items-center justify-center text-white/20">
-                                                  <Users size={24} />
-                                                </div>
-                                              )}
+                            {/* Hosté */}
+                            {(item.guestsTitle || item.guests?.some(g => g.name || (g as any).desc)) && (
+                              <div className="space-y-6 pb-8 border-b border-white/10 mb-8">
+                                {item.guestsTitle && <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/40">{item.guestsTitle}</p>}
+                                <div className="flex flex-wrap gap-y-8 gap-x-12">
+                                  {item.guests?.map((guest, gi) => (
+                                    (guest.name || (guest as any).desc) && (
+                                      <div key={gi} className="group shrink-0 max-w-[200px] flex flex-col items-center text-center">
+                                        <div className="w-28 h-28 rounded-full overflow-hidden mb-4 bg-white/10 border-2 border-white/20 shrink-0 shadow-lg">
+                                          {guest.imageUrl ? (
+                                            <img src={guest.imageUrl} alt={guest.name || 'host'} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                                          ) : (
+                                            <div className="w-full h-full flex items-center justify-center text-white/20">
+                                              <Users size={24} />
                                             </div>
-                                            {guest.name && <p className="text-xl font-bold tracking-tight text-white leading-tight">{guest.name}</p>}
-                                            {guest.role && <p className="text-sm text-white/50 font-medium mt-1 leading-snug">{guest.role}</p>}
-                                          </div>
-                                        )
-                                      ))}
-                                    </div>
-                                  </div>
-                                )}
+                                          )}
+                                        </div>
+                                        {guest.name && <p className="text-xl font-bold tracking-tight text-white leading-tight">{guest.name}</p>}
+                                        {(guest as any).desc && <p className="text-sm text-white/50 font-medium mt-1 leading-snug">{(guest as any).desc}</p>}
+                                      </div>
+                                    )
+                                  ))}
+                                </div>
+                              </div>
+                            )}
 
-                                {/* Moderátor Box */}
-                                {(item.moderatorName || item.moderatorRole) && (
-                                  <div className="w-full md:w-auto shrink-0">
-                                    <div className="bg-white/10 rounded-3xl p-6 pr-36 border border-white/10 relative min-w-[320px]">
-                                      <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/40 mb-3">Moderuje</p>
-                                      {item.moderatorName && <p className="text-xl font-bold tracking-tight text-white mb-0.5">{item.moderatorName}</p>}
-                                      {item.moderatorRole && <p className="text-sm text-white/50 font-medium">{item.moderatorRole}</p>}
-                                      <div className="absolute right-6 top-1/2 -translate-y-1/2 w-28 h-28 rounded-full overflow-hidden border-2 border-white/20 shrink-0 bg-white/5 shadow-lg">
-                                        {item.moderatorImage ? (
-                                          <img src={item.moderatorImage} alt={item.moderatorName} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                            {/* Organizátoři */}
+                            {item.organizers?.some(o => o.name || o.role) && (
+                              <div className="space-y-6">
+                                {item.organizersTitle && <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/40">{item.organizersTitle}</p>}
+                                <div className="flex flex-wrap gap-6">
+                                {item.organizers.map((org, oi) => (
+                                  (org.name || org.role) && (
+                                    <div key={oi} className="group shrink-0 max-w-[200px] flex flex-col items-center text-center">
+                                      <div className="w-28 h-28 rounded-full overflow-hidden mb-4 bg-white/10 border-2 border-white/20 shrink-0 shadow-lg">
+                                        {org.imageUrl ? (
+                                          <img src={org.imageUrl} alt={org.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                                         ) : (
                                           <div className="w-full h-full flex items-center justify-center text-white/20">
                                             <Users size={24} />
                                           </div>
                                         )}
                                       </div>
+                                      {org.name && <p className="text-xl font-bold tracking-tight text-white leading-tight">{org.name}</p>}
+                                      {org.desc && <p className="text-sm text-white/50 font-medium mt-1 leading-snug">{org.desc}</p>}
+                                      {org.role && <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/30 mt-2">{org.role}</p>}
                                     </div>
-                                  </div>
-                                )}
-                              </div>
-                            )}
-                            
-                            {/* Závěrečné slovo */}
-                            {item.closingWordName && (
-                              <div className="flex items-start gap-4 text-white pt-2">
-                                <div className="w-28 h-28 rounded-full bg-white/20 overflow-hidden flex items-center justify-center text-white text-xs font-black tracking-widest shrink-0 shadow-xl border-2 border-white/20">
-                                  {item.closingWordImage ? (
-                                    <img src={item.closingWordImage} alt={item.closingWordName} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                                  ) : (
-                                    <div className="w-full h-full flex items-center justify-center text-white/20">
-                                      <Users size={24} />
-                                    </div>
-                                  )}
-                                </div>
-                                <div className="text-left">
-                                  <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/40 mb-3 leading-none">Závěrečné slovo</p>
-                                  {item.closingWordName && <p className="text-xl font-bold tracking-tight text-white mb-0.5">{item.closingWordName}</p>}
-                                  {item.closingWordRole && (
-                                    <p className="text-sm text-white/50 font-medium">
-                                      {item.closingWordRole}
-                                    </p>
-                                  )}
+                                  )
+                                ))}
                                 </div>
                               </div>
                             )}
@@ -2557,7 +2559,7 @@ const TalkshowManager = () => {
                   </div>
                   <div className="min-w-0">
                     <h4 className="text-sm font-black text-slate-900 truncate tracking-tighter">{item.title}</h4>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest truncate">Moderuje: {item.moderatorName}</p>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest truncate">{item.desc}</p>
                   </div>
                 </div>
                 <div className="flex gap-2">
@@ -2595,82 +2597,6 @@ const TalkshowManager = () => {
                     <textarea required rows={3} value={formData.desc} onChange={e => setFormData({...formData, desc: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none resize-none transition-all" />
                   </div>
 
-                  {/* Moderátor Block */}
-                  <div className="bg-white border border-slate-200 rounded-2xl p-5 space-y-4 shadow-sm">
-                    <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2 flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-brand-teal" /> Moderátor
-                    </h4>
-                    <div className="flex gap-4 items-start">
-                      <div className="shrink-0 space-y-2">
-                        <div className="w-20 h-20 rounded-full bg-slate-50 border border-slate-200 overflow-hidden relative group/img">
-                          {formData.moderatorImage ? (
-                            <img src={formData.moderatorImage} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center text-slate-300">
-                              <User size={20} />
-                            </div>
-                          )}
-                          <label className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center cursor-pointer">
-                            <Upload size={16} className="text-white" />
-                            <input type="file" accept="image/*" className="hidden" onChange={e => handleImageUpload('moderatorImage', e)} />
-                          </label>
-                        </div>
-                        {formData.moderatorImage && (
-                          <button type="button" onClick={() => setFormData({...formData, moderatorImage: ''})} className="text-[10px] font-bold text-brand-red uppercase tracking-widest block w-full text-center hover:underline">Smazat</button>
-                        )}
-                      </div>
-                      <div className="flex-1 space-y-4">
-                        <div className="space-y-2">
-                          <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Jméno</label>
-                          <input value={formData.moderatorName} onChange={e => setFormData({...formData, moderatorName: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all text-sm" />
-                        </div>
-                        <div className="space-y-2">
-                          <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Role / Popis</label>
-                          <input value={formData.moderatorRole} onChange={e => setFormData({...formData, moderatorRole: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all text-sm" />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Závěrečné slovo Block */}
-                  <div className="bg-white border border-slate-200 rounded-2xl p-5 space-y-4 shadow-sm">
-                    <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2 flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-brand-yellow" /> Závěrečné slovo
-                    </h4>
-                    <div className="flex gap-4 items-start">
-                      <div className="shrink-0 space-y-2">
-                        <div className="w-20 h-20 rounded-full bg-slate-50 border border-slate-200 overflow-hidden relative group/img">
-                          {formData.closingWordImage ? (
-                            <img src={formData.closingWordImage} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center text-slate-300">
-                              <div className="w-full h-full flex items-center justify-center font-bold text-[10px] text-slate-300">
-                                {formData.closingWordName ? formData.closingWordName.split(' ').map((n: string) => n[0]).join('') : 'ZS'}
-                              </div>
-                            </div>
-                          )}
-                          <label className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center cursor-pointer">
-                            <Upload size={16} className="text-white" />
-                            <input type="file" accept="image/*" className="hidden" onChange={e => handleImageUpload('closingWordImage', e)} />
-                          </label>
-                        </div>
-                        {formData.closingWordImage && (
-                          <button type="button" onClick={() => setFormData({...formData, closingWordImage: ''})} className="text-[10px] font-bold text-brand-red uppercase tracking-widest block w-full text-center hover:underline">Smazat</button>
-                        )}
-                      </div>
-                      <div className="flex-1 space-y-4">
-                        <div className="space-y-2">
-                          <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Jméno</label>
-                          <input value={formData.closingWordName} onChange={e => setFormData({...formData, closingWordName: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all text-sm" />
-                        </div>
-                        <div className="space-y-2">
-                          <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Role / Popis</label>
-                          <input value={formData.closingWordRole} onChange={e => setFormData({...formData, closingWordRole: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all text-sm" />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
                   <div className="md:col-span-2 space-y-2">
                     <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Titulek hostů</label>
                     <input value={formData.guestsTitle} onChange={e => setFormData({...formData, guestsTitle: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all" />
@@ -2688,34 +2614,90 @@ const TalkshowManager = () => {
                       {formData.guests.map((guest, index) => (
                         <div key={index} className="flex gap-3 items-start p-4 bg-slate-50 rounded-2xl border border-slate-100">
                           <div className="shrink-0 space-y-2">
-                             <div className="w-20 h-20 rounded-full bg-white border border-slate-200 overflow-hidden relative group/img">
-                               {guest.imageUrl ? (
-                                 <img src={guest.imageUrl} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                               ) : (
-                                 <div className="w-full h-full flex items-center justify-center text-slate-300">
-                                   <User size={20} />
-                                 </div>
-                               )}
-                               <label className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center cursor-pointer">
-                                 <Upload size={16} className="text-white" />
-                                 <input type="file" accept="image/*" className="hidden" onChange={e => handleGuestImageUpload(index, e)} />
-                               </label>
-                             </div>
-                             {guest.imageUrl && (
-                               <button type="button" onClick={() => handleGuestChange(index, 'imageUrl', '')} className="text-[10px] font-bold text-brand-red uppercase tracking-widest block w-full text-center hover:underline">Smazat</button>
-                             )}
+                            <div className="w-20 h-20 rounded-full bg-white border border-slate-200 overflow-hidden relative group/img">
+                              {guest.imageUrl ? (
+                                <img src={guest.imageUrl} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center text-slate-300">
+                                  <User size={20} />
+                                </div>
+                              )}
+                              <label className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center cursor-pointer">
+                                <Upload size={16} className="text-white" />
+                                <input type="file" accept="image/*" className="hidden" onChange={e => handleGuestImageUpload(index, e)} />
+                              </label>
+                            </div>
+                            {guest.imageUrl && (
+                              <button type="button" onClick={() => handleGuestChange(index, 'imageUrl', '')} className="text-[10px] font-bold text-brand-red uppercase tracking-widest block w-full text-center hover:underline">Smazat</button>
+                            )}
                           </div>
                           <div className="flex-1 space-y-2">
                             <div className="space-y-1">
-                              <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Jméno hosta <span className="text-brand-red">*</span></label>
+                              <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Jméno <span className="text-brand-red">*</span></label>
                               <input required value={guest.name} onChange={e => handleGuestChange(index, 'name', e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2 text-slate-900 text-sm outline-none focus:border-brand-teal transition-all" />
                             </div>
                             <div className="space-y-1">
-                              <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Role hosta</label>
-                              <input value={guest.role} onChange={e => handleGuestChange(index, 'role', e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2 text-slate-500 text-xs outline-none focus:border-brand-teal transition-all" />
+                              <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Popis</label>
+                              <input value={guest.desc} onChange={e => handleGuestChange(index, 'desc', e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2 text-slate-500 text-xs outline-none focus:border-brand-teal transition-all" />
                             </div>
                           </div>
                           <button type="button" onClick={() => handleRemoveGuest(index)} className="p-2 text-slate-400 hover:text-brand-red transition-colors">
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="md:col-span-2 space-y-2">
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Titulek organizátorů</label>
+                    <input value={formData.organizersTitle} onChange={e => setFormData({...formData, organizersTitle: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all" />
+                  </div>
+
+                  <div className="md:col-span-2 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Seznam organizátorů</label>
+                      <button type="button" onClick={handleAddOrganizer} className="flex items-center gap-1 px-3 py-1 bg-slate-50 hover:bg-slate-100 rounded-lg text-brand-teal text-[10px] font-black uppercase tracking-widest transition-all">
+                        <Plus size={12} /> Přidat organizátora
+                      </button>
+                    </div>
+
+                    <div className="space-y-3">
+                      {formData.organizers.map((org, index) => (
+                        <div key={index} className="flex gap-3 items-start p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                          <div className="shrink-0 space-y-2">
+                            <div className="w-20 h-20 rounded-full bg-white border border-slate-200 overflow-hidden relative group/img">
+                              {org.imageUrl ? (
+                                <img src={org.imageUrl} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center text-slate-300">
+                                  <User size={20} />
+                                </div>
+                              )}
+                              <label className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center cursor-pointer">
+                                <Upload size={16} className="text-white" />
+                                <input type="file" accept="image/*" className="hidden" onChange={e => handleOrganizerImageUpload(index, e)} />
+                              </label>
+                            </div>
+                            {org.imageUrl && (
+                              <button type="button" onClick={() => handleOrganizerChange(index, 'imageUrl', '')} className="text-[10px] font-bold text-brand-red uppercase tracking-widest block w-full text-center hover:underline">Smazat</button>
+                            )}
+                          </div>
+                          <div className="flex-1 space-y-2">
+                            <div className="space-y-1">
+                              <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Role <span className="text-brand-red">*</span></label>
+                              <input required value={org.role} onChange={e => handleOrganizerChange(index, 'role', e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2 text-slate-900 text-sm outline-none focus:border-brand-teal transition-all" />
+                            </div>
+                            <div className="space-y-1">
+                              <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Jméno <span className="text-brand-red">*</span></label>
+                              <input required value={org.name} onChange={e => handleOrganizerChange(index, 'name', e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2 text-slate-900 text-sm outline-none focus:border-brand-teal transition-all" />
+                            </div>
+                            <div className="space-y-1">
+                              <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Popis</label>
+                              <input value={org.desc} onChange={e => handleOrganizerChange(index, 'desc', e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2 text-slate-500 text-xs outline-none focus:border-brand-teal transition-all" />
+                            </div>
+                          </div>
+                          <button type="button" onClick={() => handleRemoveOrganizer(index)} className="p-2 text-slate-400 hover:text-brand-red transition-colors">
                             <Trash2 size={16} />
                           </button>
                         </div>
