@@ -5134,6 +5134,8 @@ export default function Admin() {
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-slate-900 flex flex-col md:flex-row">
+      {/* SENTRY TEST — smazat po ověření */}
+      <button onClick={() => { throw new Error('Sentry test error'); }} className="fixed bottom-4 left-4 z-50 bg-red-500 text-white text-xs px-3 py-1 rounded">Sentry test</button>
       {/* Sidebar */}
       <aside className="w-full md:w-72 brand-gradient border-r border-white/10 p-6 flex flex-col z-20 text-left text-white shadow-2xl relative">
         <div className="mb-12 flex items-center gap-4">
