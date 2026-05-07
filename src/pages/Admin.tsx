@@ -819,7 +819,7 @@ const IntroManager = () => {
                         value={heroData.imageAlt} 
                         onChange={e => setHeroData({...heroData, imageAlt: e.target.value})} 
                         className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 outline-none focus:border-brand-teal shadow-sm" 
-                        placeholder="Např. Logo festivalu Den pro Brno - 30. června"
+                       
                       />
                     </div>
                   </div>
@@ -3765,7 +3765,7 @@ const CommunityManager: React.FC = () => {
                                 </div>
                                 <div className="space-y-1 text-left">
                                   <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Webový odkaz</label>
-                                  <input value={item.link || ''} onChange={e => handleItemChange(index, 'link', e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2 text-[10px] text-slate-400 outline-none focus:border-brand-teal" placeholder="www.priklad.cz" />
+                                  <input value={item.link || ''} onChange={e => handleItemChange(index, 'link', e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2 text-[10px] text-slate-400 outline-none focus:border-brand-teal" />
                                 </div>
                               </div>
                             </div>
@@ -4355,7 +4355,7 @@ const AboutManager = () => {
                                 </div>
                                 <div className="space-y-1 text-left">
                                   <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Webový odkaz</label>
-                                  <input value={item.link || ''} onChange={e => handleItemChange(idx, 'link', e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2 text-[10px] text-slate-400 outline-none focus:border-brand-teal" placeholder="www.priklad.cz" />
+                                  <input value={item.link || ''} onChange={e => handleItemChange(idx, 'link', e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2 text-[10px] text-slate-400 outline-none focus:border-brand-teal" />
                                 </div>
                               </div>
                             </div>
@@ -4773,7 +4773,7 @@ const SettingsManager = () => {
               value={siteDescription} 
               onChange={e => setSiteDescription(e.target.value)} 
               className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none resize-none transition-all" 
-              placeholder="Krátký popis pro vyhledávače..."
+             
             />
           </div>
 
@@ -4784,7 +4784,7 @@ const SettingsManager = () => {
                 value={ogTitle} 
                 onChange={e => setOgTitle(e.target.value)} 
                 className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all" 
-                placeholder="Zobrazí se při sdílení na FB/IG..."
+               
               />
             </div>
             <div className="space-y-2">
@@ -4793,7 +4793,7 @@ const SettingsManager = () => {
                 value={ogDescription} 
                 onChange={e => setOgDescription(e.target.value)} 
                 className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all" 
-                placeholder="Krátký text pod titulkem při sdílení..."
+               
               />
             </div>
           </div>
@@ -4829,7 +4829,7 @@ const SettingsManager = () => {
                   value={ogImageAlt} 
                   onChange={e => setOgImageAlt(e.target.value)} 
                   className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2 text-sm text-slate-900 outline-none focus:border-brand-teal" 
-                  placeholder="Popis obrázku pro sociální sítě..."
+                 
                 />
               </div>
             </div>
@@ -4840,7 +4840,7 @@ const SettingsManager = () => {
               value={primaryDomain} 
               onChange={e => setPrimaryDomain(e.target.value)} 
               className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all font-mono text-xs" 
-              placeholder="https://denprobrno.cz"
+             
             />
             <p className="text-[10px] text-slate-400 italic ml-1">Klíčové pro SEO. Zde uveďte doménu, na které web finálně poběží.</p>
           </div>
@@ -4850,7 +4850,7 @@ const SettingsManager = () => {
           </div>
           <div className="space-y-2">
             <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Copyright</label>
-            <input value={copyrightText} onChange={e => setCopyrightText(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all" placeholder="Např. © 2026 DEN PRO BRNO" />
+            <input value={copyrightText} onChange={e => setCopyrightText(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all" />
           </div>
 
           <div className="pt-6 border-t border-slate-100 space-y-6">
@@ -4905,7 +4905,7 @@ const SettingsManager = () => {
                   value={faviconAlt} 
                   onChange={e => setFaviconAlt(e.target.value)} 
                   className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2 text-sm text-slate-900 outline-none focus:border-brand-teal" 
-                  placeholder="Např. Ikona festivalu Den pro Brno"
+                 
                 />
               </div>
             </div>
@@ -4955,7 +4955,7 @@ const SettingsManager = () => {
                   value={logoPassiveAlt} 
                   onChange={e => setLogoPassiveAlt(e.target.value)} 
                   className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 outline-none focus:border-brand-teal shadow-sm" 
-                  placeholder="Např. Logo Den pro Brno pro červené pozadí"
+                 
                 />
               </div>
             </div>
@@ -5000,7 +5000,7 @@ const SettingsManager = () => {
                   value={logoActiveAlt} 
                   onChange={e => setLogoActiveAlt(e.target.value)} 
                   className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 outline-none focus:border-brand-teal shadow-sm" 
-                  placeholder="Např. Tmavé logo Den pro Brno pro bílé pozadí"
+                 
                 />
               </div>
             </div>
