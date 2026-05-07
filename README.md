@@ -79,18 +79,25 @@ Hodnoty pro Firebase najdeš v [Firebase konzoli](https://console.firebase.googl
 
 > Všechny `VITE_*` proměnné jsou součástí výsledného JS bundle — neukládej sem tajné serverové klíče.
 
-### Firestore pravidla
+### Pravidla přístupu
 
-Přístupová pravidla databáze jsou definována v souboru `firestore.rules`. Po každé změně tohoto souboru je nutné pravidla ručně nasadit na Firebase — jinak zůstanou platná stará pravidla v cloudu.
+Firebase má **dvě samostatné sady pravidel** — každá v jiném souboru, každá se nasazuje zvlášť:
+
+| Soubor | Co hlídá | Příkaz pro nasazení |
+|---|---|---|
+| `firestore.rules` | čtení a zápis do databáze | `firebase deploy --only firestore:rules` |
+| `storage.rules` | nahrávání a stahování souborů | `firebase deploy --only storage` |
+
+Po každé změně kteréhokoli souboru je nutné pravidla nasadit — jinak zůstanou v cloudu platná stará pravidla.
 
 **Požadavky:**
 - nainstalované Firebase CLI: `sudo npm install -g firebase-tools`
 - přihlášení: `firebase login`
 - nastavený projekt: `firebase use --add` (zvolíš `den-pro-brno`, alias `default`)
 
-**Nasazení:**
+**Nasazení obojího najednou:**
 ```bash
-firebase deploy --only firestore:rules
+firebase deploy --only firestore:rules,storage
 ```
 
 ## 5. Error handling
