@@ -2470,11 +2470,15 @@ const TalkshowManager = () => {
                                       {item.guests?.map((guest, gi) => (
                                         (guest.name || guest.role) && (
                                           <div key={gi} className="group shrink-0 max-w-[200px] flex flex-col items-center text-center">
-                                            {guest.imageUrl && (
-                                              <div className="w-28 h-28 rounded-full overflow-hidden mb-4 bg-white/10 border-2 border-white/20 shrink-0 shadow-lg">
+                                            <div className="w-28 h-28 rounded-full overflow-hidden mb-4 bg-white/10 border-2 border-white/20 shrink-0 shadow-lg">
+                                              {guest.imageUrl ? (
                                                 <img src={guest.imageUrl} alt={guest.name || 'host'} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                                              </div>
-                                            )}
+                                              ) : (
+                                                <div className="w-full h-full flex items-center justify-center text-white/20">
+                                                  <Users size={24} />
+                                                </div>
+                                              )}
+                                            </div>
                                             {guest.name && <p className="text-xl font-bold tracking-tight text-white leading-tight">{guest.name}</p>}
                                             {guest.role && <p className="text-sm text-white/50 font-medium mt-1 leading-snug">{guest.role}</p>}
                                           </div>
@@ -2513,7 +2517,9 @@ const TalkshowManager = () => {
                                   {item.closingWordImage ? (
                                     <img src={item.closingWordImage} alt={item.closingWordName} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                                   ) : (
-                                    <span className="text-xl">{item.closingWordName.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2)}</span>
+                                    <div className="w-full h-full flex items-center justify-center text-white/20">
+                                      <Users size={24} />
+                                    </div>
                                   )}
                                 </div>
                                 <div className="text-left">
