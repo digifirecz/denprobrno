@@ -4,7 +4,7 @@ import { toast } from 'react-hot-toast';
 import { Routes, Route, Link, useNavigate } from 'react-router-dom';
 import { signOut } from 'firebase/auth';
 import { auth, db, storage } from '../lib/firebase.ts';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { 
   collection, 
   onSnapshot, 
@@ -159,6 +159,18 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
 
 }
 
+const deleteStorageFile = async (url: string) => {
+  if (!url || !url.includes('firebasestorage.googleapis.com')) return;
+  try {
+    const path = decodeURIComponent(url.split('/o/')[1].split('?')[0]);
+    await deleteObject(ref(storage, path));
+  } catch (err: any) {
+    if (err.code !== 'storage/object-not-found') {
+      console.warn('Could not delete storage file:', err.message);
+    }
+  }
+};
+
 const getErrorMessage = (err: any, fallback: string) => {
   const msg = err?.message || String(err);
   if (msg.includes('auth/invalid-credential')) return "Relace vypršela. Přihlaste se prosím znovu.";
@@ -185,6 +197,7 @@ interface PracticalInfo {
 }
 
 interface Guest {
+  id: string;
   name: string;
   role: string;
   imageUrl?: string;
@@ -1422,10 +1435,10 @@ const ProgramManager = () => {
 
   const handleConfirmDelete = async () => {
     if (!artistToDelete) return;
-    
+
     setIsDeleting(true);
     try {
-      console.log("Deleting document with ID:", artistToDelete.id);
+      await deleteStorageFile(artistToDelete.imageUrl || '');
       await deleteDoc(doc(db, 'musicProgram', artistToDelete.id));
       toast.success('Úspěšně smazáno!');
       setIsDeleteModalOpen(false);
@@ -1445,7 +1458,8 @@ const ProgramManager = () => {
     setIsUploading(true);
 
     try {
-      const fileName = `music/${Date.now()}_${file.name}`;
+      await deleteStorageFile(formData.imageUrl || '');
+      const fileName = `music/${editingArtist?.id || Date.now()}/${file.name}`;
       const storageRef = ref(storage, fileName);
       
       const snapshot = await uploadBytes(storageRef, file);
@@ -2215,11 +2229,12 @@ const TalkshowManager = () => {
   const handleAddGuest = () => {
     setFormData({
       ...formData,
-      guests: [...formData.guests, { name: '', role: '' }]
+      guests: [...formData.guests, { id: Math.random().toString(36).substring(2, 9), name: '', role: '' }]
     });
   };
 
   const handleRemoveGuest = (index: number) => {
+    deleteStorageFile(formData.guests[index]?.imageUrl || '');
     setFormData({
       ...formData,
       guests: formData.guests.filter((_, i) => i !== index)
@@ -2238,7 +2253,10 @@ const TalkshowManager = () => {
 
     const toastId = toast.loading('Nahrávám obrázek hosta...');
     try {
-      const fileName = `talkshow/guests/${Date.now()}-${file.name}`;
+      const guest = formData.guests?.[index];
+      await deleteStorageFile(guest?.imageUrl || '');
+      const guestId = guest?.id || Math.random().toString(36).substring(2, 9);
+      const fileName = `talkshow/${editingTalkshow?.id || Date.now()}/guests/${guestId}/${file.name}`;
       const storageRef = ref(storage, fileName);
       const snapshot = await uploadBytes(storageRef, file);
       const url = await getDownloadURL(snapshot.ref);
@@ -2257,7 +2275,8 @@ const TalkshowManager = () => {
 
     const toastId = toast.loading('Nahrávám obrázek...');
     try {
-      const fileName = `talkshow/${field}/${Date.now()}-${file.name}`;
+      await deleteStorageFile((formData as any)[field] || '');
+      const fileName = `talkshow/${editingTalkshow?.id || Date.now()}/${field}/${file.name}`;
       const storageRef = ref(storage, fileName);
       const snapshot = await uploadBytes(storageRef, file);
       const url = await getDownloadURL(snapshot.ref);
@@ -2276,7 +2295,7 @@ const TalkshowManager = () => {
       setFormData({
         title: item.title,
         guestsTitle: item.guestsTitle || '',
-        guests: item.guests || [],
+        guests: (item.guests || []).map(g => ({ ...g, id: g.id || Math.random().toString(36).substring(2, 9) })),
         moderatorName: item.moderatorName || '',
         moderatorRole: item.moderatorRole || '',
         moderatorImage: item.moderatorImage || '',
@@ -2355,6 +2374,9 @@ const TalkshowManager = () => {
     if (!talkshowToDelete) return;
     setIsDeleting(true);
     try {
+      await deleteStorageFile(talkshowToDelete.moderatorImage || '');
+      await deleteStorageFile(talkshowToDelete.closingWordImage || '');
+      await Promise.all((talkshowToDelete.guests || []).map(g => deleteStorageFile(g.imageUrl || '')));
       await deleteDoc(doc(db, 'talkshows', talkshowToDelete.id));
       toast.success('Úspěšně smazáno!');
       setIsDeleteModalOpen(false);
@@ -3380,7 +3402,10 @@ const CommunityManager: React.FC = () => {
 
     const toastId = toast.loading('Nahrávám obrázek...');
     try {
-      const fileName = `community/items/${Date.now()}-${file.name}`;
+      const item = formData.items?.[index];
+      await deleteStorageFile(item?.image || '');
+      const itemId = item?.id || Math.random().toString(36).substring(2, 9);
+      const fileName = `community/${editingSection?.id || Date.now()}/items/${itemId}/${file.name}`;
       const storageRef = ref(storage, fileName);
       const snapshot = await uploadBytes(storageRef, file);
       const url = await getDownloadURL(snapshot.ref);
@@ -3437,6 +3462,7 @@ const CommunityManager: React.FC = () => {
     if (!itemToDelete) return;
     setIsDeleting(true);
     try {
+      await Promise.all((itemToDelete.items || []).map((item: any) => deleteStorageFile(item.image || '')));
       await deleteDoc(doc(db, 'communitySections', itemToDelete.id));
       toast.success('Úspěšně smazáno!');
       setIsDeleteModalOpen(false);
@@ -3936,7 +3962,10 @@ const AboutManager = () => {
 
     const toastId = toast.loading('Nahrávám obrázek...');
     try {
-      const fileName = `about/items/${Date.now()}-${file.name}`;
+      const item = formData.items?.[index];
+      await deleteStorageFile(item?.image || '');
+      const itemId = item?.id || Math.random().toString(36).substring(2, 9);
+      const fileName = `about/${editingSection?.id || Date.now()}/items/${itemId}/${file.name}`;
       const storageRef = ref(storage, fileName);
       const snapshot = await uploadBytes(storageRef, file);
       const url = await getDownloadURL(snapshot.ref);
@@ -4003,6 +4032,7 @@ const AboutManager = () => {
     if (!sectionToDelete) return;
     setIsDeleting(true);
     try {
+      await Promise.all((sectionToDelete.items || []).map((item: any) => deleteStorageFile(item.image || '')));
       await deleteDoc(doc(db, 'aboutSections', sectionToDelete.id));
       toast.success('Úspěšně smazáno!');
       setIsDeleteModalOpen(false);
