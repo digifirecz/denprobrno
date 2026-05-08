@@ -100,6 +100,12 @@ Hodnoty pro Firebase najdeš v [Firebase konzoli](https://console.firebase.googl
 
 > Všechny `VITE_*` proměnné jsou součástí výsledného JS bundle — neukládej sem tajné serverové klíče.
 
+### Lokace bucketu
+
+Firebase Storage bucket musí být vytvořen v regionu **`europe-west3` (Frankfurt)** — jiné regiony (zejména US) způsobují výrazně pomalejší načítání obrázků pro české uživatele.
+
+Lokaci bucketu **nelze změnit** po vytvoření. Při migraci na nový bucket je nutné znovu nahrát všechny obrázky přes Admin panel — URL adresy jsou uloženy jako kompletní stringy v Firestore a změna `VITE_FIREBASE_STORAGE_BUCKET` v `.env` ovlivní pouze nové uploady, stávající URL zůstanou ukazovat na starý bucket.
+
 ### Pravidla přístupu
 
 Firebase má **dvě samostatné sady pravidel** — každá v jiném souboru, každá se nasazuje zvlášť:
