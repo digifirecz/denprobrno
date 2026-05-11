@@ -33,7 +33,9 @@ import {
   Rocket,
   Palette,
   ExternalLink,
-  Download
+  Download,
+  Facebook,
+  Instagram
 } from 'lucide-react';
 
 import React from 'react';
@@ -282,7 +284,9 @@ export default function Home() {
     faviconAlt: '',
     ogImageUrl: '',
     ogImageAlt: '',
-    primaryDomain: ''
+    primaryDomain: '',
+    facebookUrl: '',
+    instagramUrl: ''
   });
 
   // Fetch Global Settings (Logos, Title, etc.)
@@ -299,7 +303,9 @@ export default function Home() {
           faviconAlt: data.faviconAlt || '',
           ogImageUrl: data.ogImageUrl || '',
           ogImageAlt: data.ogImageAlt || '',
-          primaryDomain: data.primaryDomain || ''
+          primaryDomain: data.primaryDomain || '',
+          facebookUrl: data.facebookUrl || '',
+          instagramUrl: data.instagramUrl || ''
         });
         if (data.title) {
           document.title = data.title;
@@ -1579,6 +1585,20 @@ export default function Home() {
                 )}
                 {contactInfo.tagline && contactInfo.tagline.trim() !== '' && (
                   <p className="text-brand-teal font-black pt-2 uppercase">{contactInfo.tagline}</p>
+                )}
+                {(globalSettings.facebookUrl || globalSettings.instagramUrl) && (
+                  <div className="flex items-center gap-3 pt-2">
+                    {globalSettings.facebookUrl && (
+                      <a href={globalSettings.facebookUrl} target="_blank" rel="noopener noreferrer" className="w-14 h-14 rounded-full bg-white/5 flex items-center justify-center text-white/40 hover:bg-brand-teal hover:text-black transition-all">
+                        <Facebook size={26} />
+                      </a>
+                    )}
+                    {globalSettings.instagramUrl && (
+                      <a href={globalSettings.instagramUrl} target="_blank" rel="noopener noreferrer" className="w-14 h-14 rounded-full bg-white/5 flex items-center justify-center text-white/40 hover:bg-brand-teal hover:text-black transition-all">
+                        <Instagram size={26} />
+                      </a>
+                    )}
+                  </div>
                 )}
               </div>
             </div>

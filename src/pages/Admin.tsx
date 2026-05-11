@@ -4782,6 +4782,8 @@ const SettingsManager = () => {
   const [primaryDomain, setPrimaryDomain] = useState('');
   const [gaMeasurementId, setGaMeasurementId] = useState('');
   const [copyrightText, setCopyrightText] = useState('');
+  const [facebookUrl, setFacebookUrl] = useState('');
+  const [instagramUrl, setInstagramUrl] = useState('');
   const [eventDate, setEventDate] = useState('');
   const [eventStartTime, setEventStartTime] = useState('');
   const [eventEndTime, setEventEndTime] = useState('');
@@ -4812,6 +4814,8 @@ const SettingsManager = () => {
         setPrimaryDomain(data.primaryDomain || '');
         setGaMeasurementId(data.gaMeasurementId || '');
         setCopyrightText(data.copyright || '');
+        setFacebookUrl(data.facebookUrl || '');
+        setInstagramUrl(data.instagramUrl || '');
         setEventDate(data.eventDate || '');
         setEventStartTime(data.eventStartTime || '');
         setEventEndTime(data.eventEndTime || '');
@@ -4879,6 +4883,8 @@ const SettingsManager = () => {
         primaryDomain,
         gaMeasurementId,
         copyright: copyrightText,
+        facebookUrl,
+        instagramUrl,
         eventDate,
         eventStartTime,
         eventEndTime,
@@ -4998,6 +5004,20 @@ const SettingsManager = () => {
           <div className="space-y-2">
             <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Copyright</label>
             <input value={copyrightText} onChange={e => setCopyrightText(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all" />
+          </div>
+
+          <div className="pt-6 border-t border-slate-100 space-y-4">
+            <h4 className="text-sm font-black uppercase tracking-widest text-slate-900">Sociální sítě</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Facebook URL</label>
+                <input placeholder="https://facebook.com/..." value={facebookUrl} onChange={e => setFacebookUrl(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all" />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Instagram URL</label>
+                <input placeholder="https://instagram.com/..." value={instagramUrl} onChange={e => setInstagramUrl(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-slate-900 focus:border-brand-teal outline-none transition-all" />
+              </div>
+            </div>
           </div>
 
           <div className="pt-6 border-t border-slate-100 space-y-6">
